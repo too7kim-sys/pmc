@@ -1,0 +1,55 @@
+#!/bin/sh
+# PMC Agent SysV init 스크립트 (AIX / HP-UX / 구형 Unix)
+# chkconfig: 2345 90 10
+# description: PMC Agent (장애예방점검 자동화 수집 데몬)
+
+PMC_HOME=/opt/pmc-agent
+PMC_BIN="$PMC_HOME/bin/pmc-agent.sh"
+PMC_CONF="$PMC_HOME/conf/agent.yml"
+PID_FILE="$PMC_HOME/pmc-agent.pid"
+LOG="$PMC_HOME/logs/pmc-agent.out"
+RUN_USER=pmc
+
+start() {
+  if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
+    echo "PMC Agent 이미 실행 중 (pid $(cat "$PID_FILE"))"
+    return 0
+  fi
+  echo "PMC Agent 시작..."
+  mkdir -p "$PMC_HOME/logs"
+  if [ "$(id -un)" = "$RUN_USER" ]; then
+    nohup "$PMC_BIN" daemon "$PMC_CONF" >"$LOG" 2>&1 &
+  else
+    su - "$RUN_USER" -c "nohup $PMC_BIN daemon $PMC_CONF >$LOG 2>&1 &"
+  fi
+  echo $! > "$PID_FILE"
+  echo "시작됨 (pid $(cat "$PID_FILE"))"
+}
+
+stop() {
+  if [ -f "$PID_FILE" ]; then
+    PID=$(cat "$PID_FILE")
+    echo "PMC Agent 종료 (pid $PID)..."
+    kill "$PID" 2>/dev/null
+    rm -f "$PID_FILE"
+  else
+    echo "PID 파일 없음 - 미실행 추정"
+  fi
+}
+
+status() {
+  if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
+    echo "PMC Agent 실행 중 (pid $(cat "$PID_FILE"))"
+  else
+    echo "PMC Agent 미실행"
+  fi
+}
+
+case "$1" in
+  start) start ;;
+  stop) stop ;;
+  restart) stop; sleep 2; start ;;
+  status) status ;;
+  *) echo "사용법: $0 {start|stop|restart|status}"; exit 1 ;;
+esac
+exit 0

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="egovframework.let.pmc.dashboard.service.DashboardMapper">
+
+    <select id="selectCounters" resultType="hashmap">
+        SELECT
+          (SELECT count(*) FROM pmc_server WHERE use_yn='Y') AS "serverCnt",
+          (SELECT count(*) FROM pmc_agent WHERE status='ACTIVE') AS "agentCnt",
+          (SELECT count(*) FROM pmc_inspection_run WHERE received_at::date = now()::date) AS "runToday",
+          (SELECT count(*) FROM pmc_inspection_result_item ri JOIN pmc_inspection_run r ON r.run_id=ri.run_id
+              WHERE ri.status='CRITICAL' AND r.received_at >= now() - interval '1 day') AS "criticalToday",
+          (SELECT count(*) FROM pmc_inspection_result_item ri JOIN pmc_inspection_run r ON r.run_id=ri.run_id
+              WHERE ri.status='WARN' AND r.received_at >= now() - interval '1 day') AS "warnToday"
+    </select>
+
+    <select id="selectStatusByCategory" resultType="hashmap">
+        SELECT category AS "category", status AS "status", count(*) AS "cnt"
+          FROM pmc_inspection_result_item ri JOIN pmc_inspection_run r ON r.run_id=ri.run_id
+         WHERE r.received_at >= now() - interval '7 day'
+         GROUP BY category, status ORDER BY category, status
+    </select>
+
+    <select id="selectRiskTopServers" resultType="hashmap">
+        SELECT s.hostname AS "hostname", s.service_name AS "serviceName",
+               sum(CASE WHEN r.overall_status='CRITICAL' THEN 1 ELSE 0 END) AS "criticalCnt",
+               sum(CASE WHEN r.overall_status='WARN' THEN 1 ELSE 0 END) AS "warnCnt"
+          FROM pmc_inspection_run r JOIN pmc_server s ON s.server_id=r.server_id
+         WHERE r.received_at >= now() - interval '7 day'
+         GROUP BY s.hostname, s.service_name
+        HAVING sum(CASE WHEN r.overall_status IN ('CRITICAL','WARN') THEN 1 ELSE 0 END) > 0
+         ORDER BY "criticalCnt" DESC, "warnCnt" DESC LIMIT 10
+    </select>
+
+    <select id="selectRecentRuns" resultType="hashmap">
+        SELECT CAST(r.run_id AS varchar) AS "runId", s.hostname AS "hostname",
+               r.overall_status AS "overallStatus", r.item_count AS "itemCount",
+               r.warn_count AS "warnCount", r.critical_count AS "criticalCount",
+               to_char(r.received_at, 'YYYY-MM-DD HH24:MI') AS "receivedAt"
+          FROM pmc_inspection_run r LEFT JOIN pmc_server s ON s.server_id=r.server_id
+         ORDER BY r.received_at DESC LIMIT 10
+    </select>
+
+    <select id="selectSvcAvailability" resultType="hashmap">
+        SELECT ri.item_name AS "itemName", ri.value AS "value", ri.status AS "status",
+               s.hostname AS "hostname", to_char(r.received_at,'MM-DD HH24:MI') AS "receivedAt"
+          FROM pmc_inspection_result_item ri
+          JOIN pmc_inspection_run r ON r.run_id=ri.run_id
+          LEFT JOIN pmc_server s ON s.server_id=r.server_id
+         WHERE ri.category='SVC' AND ri.item_code='SVC_URL_STATUS'
+           AND r.received_at >= now() - interval '1 day'
+         ORDER BY r.received_at DESC LIMIT 20
+    </select>
+
+    <select id="selectPlanCompliance" resultType="hashmap">
+        SELECT
+          (SELECT count(*) FROM pmc_inspection_plan_target) AS "targetCnt",
+          (SELECT count(*) FROM pmc_inspection_plan_target WHERE result_status='DONE') AS "doneCnt",
+          (SELECT count(*) FROM pmc_inspection_plan WHERE status='OVERDUE') AS "overdueCnt"
+    </select>
+
+    <select id="selectDqSummary" resultType="hashmap">
+        SELECT
+          (SELECT count(*) FROM pmc_dq_rule WHERE use_yn='Y') AS "ruleCnt",
+          (SELECT count(*) FROM pmc_dq_result WHERE status='FAIL'
+             AND checked_at >= now() - interval '1 day') AS "failCnt"
+    </select>
+
+</mapper>

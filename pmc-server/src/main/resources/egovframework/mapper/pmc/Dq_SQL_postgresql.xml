@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="egovframework.let.pmc.dq.service.DqMapper">
+
+    <select id="selectRules" resultType="hashmap">
+        SELECT rule_id AS "ruleId", rule_name AS "ruleName", target_table AS "targetTable",
+               rule_type AS "ruleType", check_sql AS "checkSql", severity AS "severity", use_yn AS "useYn"
+          FROM pmc_dq_rule ORDER BY rule_id
+    </select>
+
+    <!-- 관리자 정의 점검 SQL 실행 (위반 건수). 룰은 관리자만 등록 가능. -->
+    <select id="executeCount" resultType="long">
+        ${sql}
+    </select>
+
+    <insert id="insertResult">
+        INSERT INTO pmc_dq_result(rule_id, violation_count, status)
+        VALUES(#{ruleId}, #{violationCount}, #{status})
+    </insert>
+
+    <select id="selectResults" resultType="hashmap">
+        SELECT r.result_id AS "resultId", r.rule_id AS "ruleId", u.rule_name AS "ruleName",
+               u.severity AS "severity", r.violation_count AS "violationCount", r.status AS "status",
+               to_char(r.checked_at,'YYYY-MM-DD HH24:MI') AS "checkedAt"
+          FROM pmc_dq_result r JOIN pmc_dq_rule u ON u.rule_id=r.rule_id
+         ORDER BY r.result_id DESC LIMIT 100
+    </select>
+
+</mapper>

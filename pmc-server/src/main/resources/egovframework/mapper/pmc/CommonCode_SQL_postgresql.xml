@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="egovframework.com.cmm.service.CommonMapper">
+
+    <select id="selectCommonCodes" resultType="hashmap">
+        SELECT d.cl_code AS "clCode", g.cl_code_nm AS "clCodeNm", d.code AS "code",
+               d.code_nm AS "codeNm", d.sort_ordr AS "sortOrdr", d.use_yn AS "useYn"
+          FROM comtccmmncodedetail d JOIN comtccmmnclcode g ON g.cl_code=d.cl_code
+         ORDER BY d.cl_code, d.sort_ordr
+    </select>
+
+    <select id="selectUsers" resultType="hashmap">
+        SELECT e.emplyr_id AS "emplyrId", e.user_nm AS "userNm", e.email_adres AS "emailAdres",
+               e.ofcps_nm AS "ofcpsNm", e.dept_code AS "deptCode", e.emplyr_sttus AS "emplyrSttus",
+               e.lock_at AS "lockAt", to_char(e.last_login_dt,'YYYY-MM-DD HH24:MI') AS "lastLoginDt",
+               (SELECT string_agg(author_code, ',') FROM comtnempauthor a WHERE a.emplyr_id=e.emplyr_id) AS "roles"
+          FROM comtnemplyrinfo e ORDER BY e.emplyr_id
+    </select>
+
+</mapper>

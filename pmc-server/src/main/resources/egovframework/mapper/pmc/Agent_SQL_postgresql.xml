@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="egovframework.let.pmc.agent.service.AgentMapper">
+
+    <resultMap id="agentMap" type="egovframework.let.pmc.agent.service.AgentVO">
+        <result property="serverId"     column="server_id"/>
+        <result property="hostname"     column="hostname"/>
+        <result property="ipAddr"       column="ip_addr"/>
+        <result property="osType"       column="os_type"/>
+        <result property="osVersion"    column="os_version"/>
+        <result property="deptCode"     column="dept_code"/>
+        <result property="serviceName"  column="service_name"/>
+        <result property="location"     column="location"/>
+        <result property="agentId"      column="agent_id"/>
+        <result property="agentVersion" column="agent_version"/>
+        <result property="status"       column="status"/>
+        <result property="policyId"     column="policy_id"/>
+        <result property="scheduleCron" column="schedule_cron"/>
+        <result property="enrollToken"  column="enroll_token"/>
+        <result property="lastHeartbeat" column="last_heartbeat"/>
+        <result property="lastRunAt"    column="last_run_at"/>
+    </resultMap>
+
+    <!-- ===== 서버 ===== -->
+    <insert id="insertServer" parameterType="egovframework.let.pmc.agent.service.AgentVO"
+            useGeneratedKeys="true" keyProperty="serverId" keyColumn="server_id">
+        INSERT INTO pmc_server(hostname, ip_addr, os_type, os_version, dept_code, service_name, location, reg_user)
+        VALUES(#{hostname}, #{ipAddr}, #{osType}, #{osVersion}, #{deptCode}, #{serviceName}, #{location}, 'admin')
+    </insert>
+
+    <select id="selectServerList" resultMap="agentMap">
+        SELECT * FROM pmc_server WHERE use_yn='Y' ORDER BY server_id DESC
+    </select>
+
+    <select id="selectServer" resultMap="agentMap">
+        SELECT * FROM pmc_server WHERE server_id = #{serverId}
+    </select>
+
+    <update id="updateServer" parameterType="egovframework.let.pmc.agent.service.AgentVO">
+        UPDATE pmc_server
+           SET hostname=#{hostname}, ip_addr=#{ipAddr}, os_type=#{osType}, os_version=#{osVersion},
+               dept_code=#{deptCode}, service_name=#{serviceName}, location=#{location},
+               upd_user='admin', upd_dt=now()
+         WHERE server_id=#{serverId}
+    </update>
+
+    <!-- ===== Agent ===== -->
+    <insert id="insertAgentEnroll" parameterType="egovframework.let.pmc.agent.service.AgentVO">
+        INSERT INTO pmc_agent(agent_id, server_id, api_key_hash, enroll_token, status, policy_id, reg_user)
+        VALUES(CAST(#{agentId} AS uuid), #{serverId}, 'PENDING', #{enrollToken}, 'INACTIVE', #{policyId}, 'admin')
+    </insert>
+
+    <select id="selectAgentByEnrollToken" resultMap="agentMap">
+        SELECT a.*, s.hostname, s.ip_addr, s.os_type, s.os_version
+          FROM pmc_agent a JOIN pmc_server s ON s.server_id=a.server_id
+         WHERE a.enroll_token = #{token} AND a.status='INACTIVE'
+    </select>
+
+    <update id="activateAgent" parameterType="egovframework.let.pmc.agent.service.AgentVO">
+        UPDATE pmc_agent
+           SET api_key_hash=#{apiKey}, agent_version=#{agentVersion}, status='ACTIVE',
+               enroll_token=NULL, upd_dt=now()
+         WHERE agent_id=CAST(#{agentId} AS uuid)
+    </update>
+
+    <select id="selectAgent" resultMap="agentMap">
+        SELECT a.*, s.hostname, s.ip_addr, s.os_type, s.os_version, s.service_name, s.dept_code
+          FROM pmc_agent a JOIN pmc_server s ON s.server_id=a.server_id
+         WHERE a.agent_id = CAST(#{agentId} AS uuid)
+    </select>
+
+    <select id="selectAgentList" resultMap="agentMap">
+        SELECT a.*, s.hostname, s.ip_addr, s.os_type, s.os_version, s.service_name, s.dept_code
+          FROM pmc_agent a JOIN pmc_server s ON s.server_id=a.server_id
+         ORDER BY a.reg_dt DESC
+    </select>
+
+    <select id="selectActiveAgentIdByServer" resultType="string">
+        SELECT CAST(agent_id AS varchar) FROM pmc_agent
+         WHERE server_id=#{serverId} AND status='ACTIVE'
+         ORDER BY last_heartbeat DESC NULLS LAST LIMIT 1
+    </select>
+
+    <update id="updateHeartbeat">
+        UPDATE pmc_agent SET last_heartbeat=now(),
+               agent_version=COALESCE(#{agentVersion}, agent_version)
+         WHERE agent_id=CAST(#{agentId} AS uuid)
+    </update>
+
+    <update id="updateAgentSchedule">
+        UPDATE pmc_agent SET schedule_cron=#{scheduleCron}, upd_dt=now()
+         WHERE agent_id=CAST(#{agentId} AS uuid)
+    </update>
+
+    <update id="updateAgentStatus">
+        UPDATE pmc_agent SET status=#{status}, upd_dt=now()
+         WHERE agent_id=CAST(#{agentId} AS uuid)
+    </update>
+
+    <update id="touchLastRun">
+        UPDATE pmc_agent SET last_run_at=now() WHERE agent_id=CAST(#{agentId} AS uuid)
+    </update>
+
+    <!-- ===== 명령 큐 ===== -->
+    <resultMap id="cmdMap" type="egovframework.let.pmc.agent.service.AgentCommandVO">
+        <result property="commandId"   column="command_id"/>
+        <result property="agentId"     column="agent_id"/>
+        <result property="commandType" column="command_type"/>
+        <result property="params"      column="params"/>
+        <result property="status"      column="status"/>
+        <result property="resultMsg"   column="result_msg"/>
+        <result property="requestedBy" column="requested_by"/>
+        <result property="requestedAt" column="requested_at"/>
+        <result property="pickedAt"    column="picked_at"/>
+        <result property="completedAt" column="completed_at"/>
+    </resultMap>
+
+    <insert id="insertCommand" parameterType="egovframework.let.pmc.agent.service.AgentCommandVO">
+        INSERT INTO pmc_agent_command(agent_id, command_type, params, status, requested_by)
+        VALUES(CAST(#{agentId} AS uuid), #{commandType}, #{params}, 'PENDING', #{requestedBy})
+    </insert>
+
+    <select id="selectPendingCommands" resultMap="cmdMap">
+        SELECT * FROM pmc_agent_command
+         WHERE agent_id=CAST(#{agentId} AS uuid) AND status IN ('PENDING','SENT')
+         ORDER BY command_id ASC
+    </select>
+
+    <select id="selectCommandHistory" resultMap="cmdMap">
+        SELECT * FROM pmc_agent_command
+         WHERE agent_id=CAST(#{agentId} AS uuid)
+         ORDER BY command_id DESC LIMIT 50
+    </select>
+
+    <update id="markCommandsSent">
+        UPDATE pmc_agent_command SET status='SENT', picked_at=now()
+         WHERE agent_id=CAST(#{agentId} AS uuid) AND status='PENDING'
+    </update>
+
+    <update id="ackCommand">
+        UPDATE pmc_agent_command SET status=#{status}, result_msg=#{resultMsg}, completed_at=now()
+         WHERE command_id=#{commandId}
+    </update>
+
+</mapper>

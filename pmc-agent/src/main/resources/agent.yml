@@ -1,0 +1,44 @@
+# PMC Agent 기본 설정 (장애예방점검 자동화)
+# 환경변수로 덮어쓰기 가능: PMC_SERVER_URL, PMC_API_KEY, PMC_AGENT_ID
+
+# 점검 서버 베이스 URL
+serverUrl: http://localhost:8080
+
+# 등록용 1회 토큰 (웹 UI 에서 대상 서버 등록 시 발급)
+enrollToken: ""
+
+# 등록 성공 후 자동으로 채워짐 (수동 입력 불필요)
+# agentId: ""
+# apiKey: ""
+
+# 호스트 식별 (비우면 자동 탐지)
+# hostname: ""
+# ipAddr: ""
+# osType: ""   # LINUX/WINDOWS/AIX/HPUX/SOLARIS (비우면 자동)
+
+# 수집 카테고리 (전체 7종)
+categories:
+  - OS
+  - WEB
+  - WAS
+  - DB
+  - SW
+  - NW
+  - SVC
+
+# 스케줄: scheduleCron 이 있으면 우선(일일 HH:mm). 없으면 intervalSeconds 인터벌.
+#   예) "0 0 6 * * *"  → 매일 06:00
+scheduleCron: ""
+intervalSeconds: 300      # 데모용 5분 인터벌
+
+# heartbeat 주기(초)
+heartbeatSeconds: 60
+
+# 명령/HTTP 기본 타임아웃(ms)
+timeoutMs: 10000
+
+# 미전송 결과 스풀 디렉토리
+spoolDir: ./spool
+
+# 로그 레벨
+logLevel: INFO

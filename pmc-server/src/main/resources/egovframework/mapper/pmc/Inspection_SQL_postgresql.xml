@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="egovframework.let.pmc.ingest.service.InspectionMapper">
+
+    <select id="countRun" resultType="int">
+        SELECT count(*) FROM pmc_inspection_run WHERE run_id = CAST(#{runId} AS uuid)
+    </select>
+
+    <insert id="insertRun" parameterType="egovframework.let.pmc.ingest.service.InspectionRunVO">
+        INSERT INTO pmc_inspection_run(run_id, agent_id, server_id, policy_id, policy_version, plan_id,
+               run_type, started_at, finished_at, overall_status, item_count, warn_count,
+               critical_count, error_count, source_ip)
+        VALUES(CAST(#{runId} AS uuid),
+               <choose><when test="agentId != null">CAST(#{agentId} AS uuid)</when><otherwise>NULL</otherwise></choose>,
+               #{serverId}, #{policyId}, #{policyVersion}, #{planId}, #{runType},
+               #{startedAt}, #{finishedAt}, #{overallStatus}, #{itemCount}, #{warnCount},
+               #{criticalCount}, #{errorCount}, #{sourceIp})
+    </insert>
+
+    <insert id="insertResultItem" parameterType="egovframework.let.pmc.ingest.service.ResultItemVO">
+        INSERT INTO pmc_inspection_result_item(run_id, category, item_code, item_name, value, unit,
+               status, source, input_user, threshold_warn, threshold_critical, raw_text, error_text, collected_at)
+        VALUES(CAST(#{runId} AS uuid), #{category}, #{itemCode}, #{itemName}, #{value}, #{unit},
+               #{status}, COALESCE(#{source},'AUTO'), #{inputUser}, #{thresholdWarn}, #{thresholdCritical},
+               #{rawText}, #{errorText}, #{collectedAt})
+    </insert>
+
+    <resultMap id="runMap" type="egovframework.let.pmc.ingest.service.InspectionRunVO">
+        <result property="runId" column="run_id"/>
+        <result property="agentId" column="agent_id"/>
+        <result property="serverId" column="server_id"/>
+        <result property="policyId" column="policy_id"/>
+        <result property="policyVersion" column="policy_version"/>
+        <result property="planId" column="plan_id"/>
+        <result property="runType" column="run_type"/>
+        <result property="startedAt" column="started_at"/>
+        <result property="finishedAt" column="finished_at"/>
+        <result property="overallStatus" column="overall_status"/>
+        <result property="itemCount" column="item_count"/>
+        <result property="warnCount" column="warn_count"/>
+        <result property="criticalCount" column="critical_count"/>
+        <result property="errorCount" column="error_count"/>
+        <result property="receivedAt" column="received_at"/>
+        <result property="hostname" column="hostname"/>
+    </resultMap>
+
+    <select id="selectRunList" resultMap="runMap">
+        SELECT r.*, s.hostname
+          FROM pmc_inspection_run r LEFT JOIN pmc_server s ON s.server_id=r.server_id
+        <if test="serverId != null"> WHERE r.server_id = #{serverId} </if>
+         ORDER BY r.received_at DESC LIMIT 200
+    </select>
+
+    <select id="selectRun" resultMap="runMap">
+        SELECT r.*, s.hostname, s.dept_code, s.service_name, s.os_type
+          FROM pmc_inspection_run r LEFT JOIN pmc_server s ON s.server_id=r.server_id
+         WHERE r.run_id = CAST(#{runId} AS uuid)
+    </select>
+
+    <resultMap id="itemMap" type="egovframework.let.pmc.ingest.service.ResultItemVO">
+        <result property="resultItemId" column="result_item_id"/>
+        <result property="runId" column="run_id"/>
+        <result property="category" column="category"/>
+        <result property="itemCode" column="item_code"/>
+        <result property="itemName" column="item_name"/>
+        <result property="value" column="value"/>
+        <result property="unit" column="unit"/>
+        <result property="status" column="status"/>
+        <result property="source" column="source"/>
+        <result property="inputUser" column="input_user"/>
+        <result property="thresholdWarn" column="threshold_warn"/>
+        <result property="thresholdCritical" column="threshold_critical"/>
+        <result property="rawText" column="raw_text"/>
+        <result property="errorText" column="error_text"/>
+        <result property="collectedAt" column="collected_at"/>
+    </resultMap>
+
+    <select id="selectResultItems" resultMap="itemMap">
+        SELECT * FROM pmc_inspection_result_item
+         WHERE run_id = CAST(#{runId} AS uuid)
+         ORDER BY category, item_code
+    </select>
+
+    <update id="linkPlanTarget">
+        UPDATE pmc_inspection_plan_target
+           SET result_status='DONE', run_id=CAST(#{runId} AS uuid), done_dt=now()
+         WHERE plan_id=#{planId} AND server_id=#{serverId}
+    </update>
+
+    <select id="selectStatusSummary" resultType="hashmap">
+        SELECT category, status, count(*) AS cnt
+          FROM pmc_inspection_result_item ri
+          JOIN pmc_inspection_run r ON r.run_id=ri.run_id
+         WHERE r.received_at >= now() - interval '7 day'
+         GROUP BY category, status
+    </select>
+
+</mapper>

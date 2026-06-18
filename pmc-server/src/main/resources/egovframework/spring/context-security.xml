@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans xmlns="http://www.springframework.org/schema/security"
+             xmlns:beans="http://www.springframework.org/schema/beans"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="http://www.springframework.org/schema/beans
+                 http://www.springframework.org/schema/beans/spring-beans.xsd
+                 http://www.springframework.org/schema/security
+                 http://www.springframework.org/schema/security/spring-security.xsd">
+
+    <!-- 비밀번호 인코더 (bcrypt) -->
+    <beans:bean id="passwordEncoder"
+                class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder"/>
+
+    <!-- Agent API 토큰 인증 필터 -->
+    <beans:bean id="agentTokenAuthFilter"
+                class="egovframework.let.pmc.common.security.AgentTokenAuthFilter"/>
+
+    <!-- 인증 실패 시 401 반환(JSON API용) -->
+    <beans:bean id="apiEntryPoint"
+                class="org.springframework.security.web.authentication.HttpStatusEntryPoint">
+        <beans:constructor-arg value="UNAUTHORIZED"/>
+    </beans:bean>
+
+    <!-- (1) Agent API 평면 : 무상태, 토큰 인증, CSRF 미사용 -->
+    <http pattern="/api/v1/**" create-session="stateless" use-expressions="true"
+          entry-point-ref="apiEntryPoint">
+        <csrf disabled="true"/>
+        <intercept-url pattern="/api/v1/agents/register" access="permitAll"/>
+        <intercept-url pattern="/api/v1/**" access="permitAll"/>
+        <custom-filter ref="agentTokenAuthFilter" position="PRE_AUTH_FILTER"/>
+    </http>
+
+    <!-- (2) 웹 UI 평면 : 세션, 폼 로그인 -->
+    <http use-expressions="true">
+        <intercept-url pattern="/login.do" access="permitAll"/>
+        <intercept-url pattern="/css/**" access="permitAll"/>
+        <intercept-url pattern="/js/**" access="permitAll"/>
+        <intercept-url pattern="/pmc/admin/**" access="hasRole('ADMIN')"/>
+        <intercept-url pattern="/pmc/policy/**" access="hasRole('ADMIN')"/>
+        <intercept-url pattern="/cmm/**" access="hasRole('ADMIN')"/>
+        <intercept-url pattern="/pmc/**" access="isAuthenticated()"/>
+        <intercept-url pattern="/" access="isAuthenticated()"/>
+        <form-login login-page="/login.do"
+                    login-processing-url="/login-process"
+                    username-parameter="username"
+                    password-parameter="password"
+                    default-target-url="/pmc/dashboard.do"
+                    authentication-failure-url="/login.do?error=1"/>
+        <logout logout-url="/logout" logout-success-url="/login.do"/>
+        <csrf/>
+    </http>
+
+    <authentication-manager>
+        <authentication-provider user-service-ref="userDetailsService">
+            <password-encoder ref="passwordEncoder"/>
+        </authentication-provider>
+    </authentication-manager>
+
+</beans:beans>

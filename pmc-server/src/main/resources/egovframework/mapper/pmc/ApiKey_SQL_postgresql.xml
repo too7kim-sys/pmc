@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="egovframework.let.pmc.common.security.ApiKeyMapper">
+
+    <select id="selectActiveAgentIdByKeyHash" parameterType="string" resultType="string">
+        SELECT CAST(agent_id AS varchar)
+          FROM pmc_agent
+         WHERE api_key_hash = #{keyHash}
+           AND status = 'ACTIVE'
+        LIMIT 1
+    </select>
+
+</mapper>

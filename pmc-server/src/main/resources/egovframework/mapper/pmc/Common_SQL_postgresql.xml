@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="egovframework.let.pmc.common.security.UserMapper">
+
+    <select id="selectUser" parameterType="string" resultType="hashmap">
+        SELECT emplyr_id AS "emplyrId", user_nm AS "userNm", password AS "password",
+               email_adres AS "emailAdres", ofcps_nm AS "ofcpsNm", dept_code AS "deptCode",
+               emplyr_sttus AS "emplyrSttus", lock_at AS "lockAt", fail_cnt AS "failCnt"
+          FROM comtnemplyrinfo
+         WHERE emplyr_id = #{emplyrId}
+    </select>
+
+    <select id="selectAuthorities" parameterType="string" resultType="string">
+        SELECT author_code FROM comtnempauthor WHERE emplyr_id = #{emplyrId}
+    </select>
+
+    <update id="updateLoginSuccess" parameterType="string">
+        UPDATE comtnemplyrinfo
+           SET last_login_dt = now(), fail_cnt = 0
+         WHERE emplyr_id = #{emplyrId}
+    </update>
+
+</mapper>

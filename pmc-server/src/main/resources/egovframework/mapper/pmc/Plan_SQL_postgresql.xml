@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="egovframework.let.pmc.plan.service.PlanMapper">
+
+    <resultMap id="planMap" type="egovframework.let.pmc.plan.service.PlanVO">
+        <result property="planId" column="plan_id"/>
+        <result property="planName" column="plan_name"/>
+        <result property="cycle" column="cycle"/>
+        <result property="periodFrom" column="period_from"/>
+        <result property="periodTo" column="period_to"/>
+        <result property="policyId" column="policy_id"/>
+        <result property="plannedDate" column="planned_date"/>
+        <result property="inspectorId" column="inspector_id"/>
+        <result property="approverId" column="approver_id"/>
+        <result property="status" column="status"/>
+        <result property="approveStatus" column="approve_status"/>
+        <result property="approveOpinion" column="approve_opinion"/>
+        <result property="approveDt" column="approve_dt"/>
+        <result property="targetCnt" column="target_cnt"/>
+        <result property="doneCnt" column="done_cnt"/>
+    </resultMap>
+
+    <select id="selectPlanList" resultMap="planMap">
+        SELECT p.*,
+               (SELECT count(*) FROM pmc_inspection_plan_target t WHERE t.plan_id=p.plan_id) AS target_cnt,
+               (SELECT count(*) FROM pmc_inspection_plan_target t WHERE t.plan_id=p.plan_id AND t.result_status='DONE') AS done_cnt
+          FROM pmc_inspection_plan p
+         ORDER BY p.plan_id DESC
+    </select>
+
+    <select id="selectPlan" resultMap="planMap">
+        SELECT p.*,
+               (SELECT count(*) FROM pmc_inspection_plan_target t WHERE t.plan_id=p.plan_id) AS target_cnt,
+               (SELECT count(*) FROM pmc_inspection_plan_target t WHERE t.plan_id=p.plan_id AND t.result_status='DONE') AS done_cnt
+          FROM pmc_inspection_plan p WHERE p.plan_id=#{planId}
+    </select>
+
+    <insert id="insertPlan" parameterType="egovframework.let.pmc.plan.service.PlanVO"
+            useGeneratedKeys="true" keyProperty="planId" keyColumn="plan_id">
+        INSERT INTO pmc_inspection_plan(plan_name, cycle, period_from, period_to, policy_id,
+               planned_date, inspector_id, approver_id, status, approve_status, reg_user)
+        VALUES(#{planName}, #{cycle}, #{periodFrom}, #{periodTo}, #{policyId}, #{plannedDate},
+               #{inspectorId}, #{approverId}, 'PLANNED', 'NONE', 'admin')
+    </insert>
+
+    <insert id="insertTarget" parameterType="egovframework.let.pmc.plan.service.PlanTargetVO">
+        INSERT INTO pmc_inspection_plan_target(plan_id, server_id, result_status)
+        VALUES(#{planId}, #{serverId}, 'PENDING')
+        ON CONFLICT (plan_id, server_id) DO NOTHING
+    </insert>
+
+    <resultMap id="targetMap" type="egovframework.let.pmc.plan.service.PlanTargetVO">
+        <result property="planTargetId" column="plan_target_id"/>
+        <result property="planId" column="plan_id"/>
+        <result property="serverId" column="server_id"/>
+        <result property="resultStatus" column="result_status"/>
+        <result property="runId" column="run_id"/>
+        <result property="doneDt" column="done_dt"/>
+        <result property="hostname" column="hostname"/>
+        <result property="osType" column="os_type"/>
+        <result property="serviceName" column="service_name"/>
+        <result property="overallStatus" column="overall_status"/>
+    </resultMap>
+
+    <select id="selectTargets" resultMap="targetMap">
+        SELECT t.*, s.hostname, s.os_type, s.service_name, r.overall_status
+          FROM pmc_inspection_plan_target t
+          JOIN pmc_server s ON s.server_id=t.server_id
+          LEFT JOIN pmc_inspection_run r ON r.run_id=t.run_id
+         WHERE t.plan_id=#{planId}
+         ORDER BY t.plan_target_id
+    </select>
+
+    <update id="updateStatus">
+        UPDATE pmc_inspection_plan SET status=#{status}, upd_dt=now() WHERE plan_id=#{planId}
+    </update>
+
+    <update id="updateApprove">
+        UPDATE pmc_inspection_plan
+           SET approve_status=#{approveStatus}, approve_opinion=#{opinion}, approve_dt=now(), upd_dt=now()
+         WHERE plan_id=#{planId}
+    </update>
+
+    <update id="markOverdue">
+        UPDATE pmc_inspection_plan
+           SET status='OVERDUE'
+         WHERE status IN ('PLANNED','IN_PROGRESS') AND planned_date IS NOT NULL AND planned_date &lt; now()::date
+    </update>
+
+    <select id="selectLatestRunIdByServer" resultType="string">
+        SELECT CAST(run_id AS varchar) FROM pmc_inspection_run
+         WHERE server_id=#{serverId} ORDER BY received_at DESC LIMIT 1
+    </select>
+
+</mapper>

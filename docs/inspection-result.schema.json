@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://pmc.go.kr/schemas/inspection-result.json",
+  "title": "PMC Inspection Result Envelope",
+  "description": "Agent가 수집 후 서버(/api/v1/inspections/results)로 전송하는 점검 결과 표준 엔벨로프",
+  "type": "object",
+  "required": ["schemaVersion", "agentId", "runId", "items"],
+  "properties": {
+    "schemaVersion": { "type": "string", "example": "1.0" },
+    "agentId": { "type": "string", "format": "uuid" },
+    "hostname": { "type": "string" },
+    "platform": { "type": "string", "enum": ["LINUX", "WINDOWS", "AIX", "HPUX", "SOLARIS", "UNKNOWN"] },
+    "policyId": { "type": ["integer", "null"] },
+    "policyVersion": { "type": ["integer", "null"] },
+    "planId": { "type": ["integer", "null"] },
+    "runId": { "type": "string", "format": "uuid", "description": "Agent 생성 멱등키" },
+    "runType": { "type": "string", "enum": ["AUTO", "MANUAL"], "default": "AUTO" },
+    "startedAt": { "type": "string", "format": "date-time" },
+    "finishedAt": { "type": "string", "format": "date-time" },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["category", "itemCode", "status"],
+        "properties": {
+          "category": { "type": "string", "enum": ["OS", "WEB", "WAS", "DB", "SW", "NW", "SVC"] },
+          "itemCode": { "type": "string", "example": "OS_CPU_USAGE" },
+          "name": { "type": "string" },
+          "value": { "type": ["string", "null"] },
+          "unit": { "type": ["string", "null"] },
+          "status": { "type": "string", "enum": ["NORMAL", "WARN", "CRITICAL", "ERROR", "NA"] },
+          "thresholdWarn": { "type": ["string", "null"] },
+          "thresholdCritical": { "type": ["string", "null"] },
+          "raw": { "type": ["string", "null"] },
+          "collectedAt": { "type": ["string", "null"], "format": "date-time" },
+          "error": { "type": ["string", "null"] }
+        }
+      }
+    }
+  }
+}

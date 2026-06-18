@@ -1,0 +1,20 @@
+[Unit]
+Description=PMC Agent (장애예방점검 자동화 수집 데몬)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pmc
+Group=pmc
+# 설치 경로에 맞게 수정
+Environment=JAVA_HOME=/usr/lib/jvm/java-8-openjdk
+Environment=PMC_LOG_DIR=/opt/pmc-agent/logs
+WorkingDirectory=/opt/pmc-agent
+ExecStart=/opt/pmc-agent/bin/pmc-agent.sh daemon /opt/pmc-agent/conf/agent.yml
+Restart=on-failure
+RestartSec=10
+SuccessExitStatus=143
+
+[Install]
+WantedBy=multi-user.target

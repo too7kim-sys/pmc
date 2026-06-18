@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="egovframework.let.pmc.policy.service.PolicyMapper">
+
+    <select id="selectPolicyList" resultType="egovframework.let.pmc.policy.service.PolicyVO">
+        SELECT policy_id, policy_name, description, version, schedule_cron, os_scope, use_yn
+          FROM pmc_policy ORDER BY policy_id
+    </select>
+
+    <select id="selectPolicy" resultType="egovframework.let.pmc.policy.service.PolicyVO">
+        SELECT policy_id, policy_name, description, version, schedule_cron, os_scope, use_yn
+          FROM pmc_policy WHERE policy_id = #{policyId}
+    </select>
+
+    <select id="selectPolicyVersion" resultType="java.lang.Integer">
+        SELECT version FROM pmc_policy WHERE policy_id = #{policyId}
+    </select>
+
+    <select id="selectPolicyItems" resultType="egovframework.let.pmc.policy.service.PolicyItemVO">
+        SELECT policy_item_id, policy_id, category, mid_category, item_code, item_name, unit,
+               check_cycle, check_method, check_type, judge_criteria, collect_yn, sort_order
+          FROM pmc_policy_item WHERE policy_id = #{policyId}
+         ORDER BY sort_order, policy_item_id
+    </select>
+
+    <select id="selectThresholds" resultType="egovframework.let.pmc.policy.service.ThresholdVO">
+        SELECT t.threshold_id, t.policy_item_id, i.item_code, t.level, t.operator,
+               t.compare_value, t.range_low, t.range_high
+          FROM pmc_policy_threshold t
+          JOIN pmc_policy_item i ON i.policy_item_id = t.policy_item_id
+         WHERE i.policy_id = #{policyId}
+    </select>
+
+    <select id="selectSvcTargets" resultType="egovframework.let.pmc.policy.service.SvcTargetVO">
+        SELECT svc_target_id, policy_id, svc_name, url, http_method, expected_status,
+               expected_content, timeout_ms, ssl_check_yn, use_yn
+          FROM pmc_policy_svc_target WHERE policy_id = #{policyId} AND use_yn='Y'
+    </select>
+
+    <insert id="insertPolicy" parameterType="egovframework.let.pmc.policy.service.PolicyVO"
+            useGeneratedKeys="true" keyProperty="policyId" keyColumn="policy_id">
+        INSERT INTO pmc_policy(policy_name, description, version, schedule_cron, os_scope, use_yn, reg_user)
+        VALUES(#{policyName}, #{description}, 1, #{scheduleCron}, #{osScope}, 'Y', 'admin')
+    </insert>
+
+    <update id="updatePolicy" parameterType="egovframework.let.pmc.policy.service.PolicyVO">
+        UPDATE pmc_policy
+           SET policy_name=#{policyName}, description=#{description}, schedule_cron=#{scheduleCron},
+               os_scope=#{osScope}, use_yn=#{useYn}, upd_user='admin', upd_dt=now()
+         WHERE policy_id=#{policyId}
+    </update>
+
+    <update id="bumpVersion">
+        UPDATE pmc_policy SET version = version + 1, upd_dt=now() WHERE policy_id=#{policyId}
+    </update>
+
+    <insert id="insertItem" parameterType="egovframework.let.pmc.policy.service.PolicyItemVO"
+            useGeneratedKeys="true" keyProperty="policyItemId" keyColumn="policy_item_id">
+        INSERT INTO pmc_policy_item(policy_id, category, mid_category, item_code, item_name, unit,
+               check_cycle, check_method, check_type, judge_criteria, collect_yn, sort_order)
+        VALUES(#{policyId}, #{category}, #{midCategory}, #{itemCode}, #{itemName}, #{unit},
+               #{checkCycle}, #{checkMethod}, #{checkType}, #{judgeCriteria},
+               COALESCE(#{collectYn},'Y'), COALESCE(#{sortOrder},0))
+    </insert>
+
+    <update id="updateItem" parameterType="egovframework.let.pmc.policy.service.PolicyItemVO">
+        UPDATE pmc_policy_item
+           SET item_name=#{itemName}, unit=#{unit}, check_cycle=#{checkCycle},
+               check_method=#{checkMethod}, check_type=#{checkType}, judge_criteria=#{judgeCriteria},
+               collect_yn=#{collectYn}, sort_order=#{sortOrder}
+         WHERE policy_item_id=#{policyItemId}
+    </update>
+
+    <delete id="deleteThresholdsByItem">
+        DELETE FROM pmc_policy_threshold WHERE policy_item_id=#{policyItemId}
+    </delete>
+
+    <insert id="insertThreshold" parameterType="egovframework.let.pmc.policy.service.ThresholdVO">
+        INSERT INTO pmc_policy_threshold(policy_item_id, level, operator, compare_value, range_low, range_high)
+        VALUES(#{policyItemId}, #{level}, #{operator}, #{compareValue}, #{rangeLow}, #{rangeHigh})
+    </insert>
+
+    <insert id="insertSvcTarget" parameterType="egovframework.let.pmc.policy.service.SvcTargetVO">
+        INSERT INTO pmc_policy_svc_target(policy_id, svc_name, url, http_method, expected_status,
+               expected_content, timeout_ms, ssl_check_yn, use_yn)
+        VALUES(#{policyId}, #{svcName}, #{url}, COALESCE(#{httpMethod},'GET'), COALESCE(#{expectedStatus},200),
+               #{expectedContent}, COALESCE(#{timeoutMs},5000), COALESCE(#{sslCheckYn},'Y'), 'Y')
+    </insert>
+
+    <delete id="deleteSvcTarget">
+        DELETE FROM pmc_policy_svc_target WHERE svc_target_id=#{svcTargetId}
+    </delete>
+
+</mapper>

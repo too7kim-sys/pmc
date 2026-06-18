@@ -1,0 +1,36 @@
+* { box-sizing: border-box; }
+body { font-family: "Malgun Gothic", "Nanum Gothic", sans-serif; margin: 0; background: #f4f6f9; color: #222; }
+header.top { background: #1b3a6b; color: #fff; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; }
+header.top h1 { font-size: 18px; margin: 0; }
+header.top .user { font-size: 13px; }
+header.top .user a { color: #cfe0ff; margin-left: 10px; }
+nav.gnb { background: #27508f; padding: 0 20px; }
+nav.gnb a { display: inline-block; color: #fff; padding: 12px 16px; text-decoration: none; font-size: 14px; }
+nav.gnb a:hover, nav.gnb a.on { background: #1b3a6b; }
+main { padding: 20px; }
+h2.page { font-size: 20px; margin: 0 0 16px; border-left: 4px solid #27508f; padding-left: 10px; }
+.card { background: #fff; border: 1px solid #e0e4ea; border-radius: 6px; padding: 16px; margin-bottom: 16px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap: 12px; }
+.kpi { background: #fff; border: 1px solid #e0e4ea; border-radius: 6px; padding: 16px; text-align: center; }
+.kpi .num { font-size: 28px; font-weight: bold; color: #1b3a6b; }
+.kpi .lbl { font-size: 13px; color: #666; margin-top: 6px; }
+table.tbl { width: 100%; border-collapse: collapse; background: #fff; font-size: 13px; }
+table.tbl th, table.tbl td { border: 1px solid #dde2e8; padding: 8px 10px; text-align: left; }
+table.tbl th { background: #eef2f7; }
+table.tbl tr:hover td { background: #f7faff; }
+.btn { display: inline-block; padding: 6px 12px; background: #27508f; color: #fff; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; font-size: 13px; }
+.btn:hover { background: #1b3a6b; }
+.btn.gray { background: #6b7280; }
+.btn.red { background: #c0392b; }
+.st { padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: bold; color: #fff; }
+.st.NORMAL { background: #2e7d32; }
+.st.WARN { background: #f39c12; }
+.st.CRITICAL { background: #c0392b; }
+.st.ERROR { background: #6b2737; }
+.st.NA { background: #95a5a6; }
+.bar { background: #e0e4ea; border-radius: 4px; height: 18px; overflow: hidden; }
+.bar > span { display: block; height: 100%; background: #27508f; color:#fff; font-size:11px; text-align:right; padding-right:4px; }
+form.inline { display: inline; }
+label { font-size: 13px; }
+input[type=text], input[type=date], select, textarea { padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
+.muted { color: #888; font-size: 12px; }
