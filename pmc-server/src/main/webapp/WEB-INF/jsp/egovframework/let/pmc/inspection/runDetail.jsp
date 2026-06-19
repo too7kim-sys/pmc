@@ -1,5 +1,5 @@
 <%@ include file="/WEB-INF/jsp/inc/header.jspf" %>
-<h2 class="page">점검 결과 상세 — ${run.hostname}</h2>
+<h2 class="page">점검 결과 상세 — <c:out value="${run.hostname}"/></h2>
 
 <div class="card">
     <p>종합판정: <span class="st ${run.overallStatus}">${run.overallStatus}</span>
@@ -19,9 +19,9 @@
         <tr><th>분류</th><th>항목코드</th><th>항목명</th><th>수집값</th><th>단위</th><th>기준(주의/위험)</th><th>판정</th><th>소스</th></tr>
         <c:forEach var="i" items="${run.items}">
             <tr>
-                <td>${i.category}</td><td><code>${i.itemCode}</code></td><td>${i.itemName}</td>
-                <td>${i.value}</td><td>${i.unit}</td>
-                <td>${i.thresholdWarn} / ${i.thresholdCritical}</td>
+                <td>${i.category}</td><td><code><c:out value="${i.itemCode}"/></code></td><td><c:out value="${i.itemName}"/></td>
+                <td><c:out value="${i.value}"/></td><td><c:out value="${i.unit}"/></td>
+                <td><c:out value="${i.thresholdWarn}"/> / <c:out value="${i.thresholdCritical}"/></td>
                 <td><span class="st ${i.status}">${i.status}</span></td>
                 <td>${i.source}</td>
             </tr>

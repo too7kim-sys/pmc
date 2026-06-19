@@ -74,7 +74,7 @@ public class ReportServiceImpl implements ReportService {
         ReportData.Section sec = null;
         if (run.getItems() != null) {
             for (ResultItemVO it : run.getItems()) {
-                if (!it.getCategory().equals(currentCat)) {
+                if (!java.util.Objects.equals(it.getCategory(), currentCat)) {
                     currentCat = it.getCategory();
                     sec = data.addSection("[" + currentCat + "]", "점검항목", "수집값", "단위", "기준(주의/위험)", "판정");
                 }

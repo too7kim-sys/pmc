@@ -89,4 +89,10 @@ public abstract class AbstractCollector implements Collector {
         }
         return null;
     }
+
+    /** 지정 문자열을 명령행에 포함하는 프로세스가 실행 중인지(pgrep -f). */
+    protected boolean procContains(CollectContext ctx, String needle) {
+        CommandRunner.Result r = ctx.runner().run(ctx.timeoutMs(), "pgrep", "-f", needle);
+        return r.isSuccess() && !r.getStdout().trim().isEmpty();
+    }
 }

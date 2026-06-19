@@ -1,5 +1,5 @@
 <%@ include file="/WEB-INF/jsp/inc/header.jspf" %>
-<h2 class="page">Agent 원격제어 — ${agent.hostname}</h2>
+<h2 class="page">Agent 원격제어 — <c:out value="${agent.hostname}"/></h2>
 
 <div class="card">
     <p>상태: <span class="st ${agent.status=='ACTIVE'?'NORMAL':'NA'}">${agent.status}</span>
@@ -70,9 +70,9 @@
         <tr><th>ID</th><th>유형</th><th>파라미터</th><th>상태</th><th>결과</th><th>요청</th><th>요청시각</th><th>완료시각</th></tr>
         <c:forEach var="c" items="${commands}">
             <tr>
-                <td>${c.commandId}</td><td>${c.commandType}</td><td><code>${c.params}</code></td>
-                <td><span class="st ${c.status=='DONE'?'NORMAL':(c.status=='FAILED'?'CRITICAL':'NA')}">${c.status}</span></td>
-                <td>${c.resultMsg}</td><td>${c.requestedBy}</td><td>${c.requestedAt}</td><td>${c.completedAt}</td>
+                <td>${c.commandId}</td><td><c:out value="${c.commandType}"/></td><td><code><c:out value="${c.params}"/></code></td>
+                <td><span class="st ${c.status=='DONE'?'NORMAL':(c.status=='FAILED'?'CRITICAL':'NA')}"><c:out value="${c.status}"/></span></td>
+                <td><c:out value="${c.resultMsg}"/></td><td><c:out value="${c.requestedBy}"/></td><td>${c.requestedAt}</td><td>${c.completedAt}</td>
             </tr>
         </c:forEach>
         <c:if test="${empty commands}"><tr><td colspan="8" class="muted">명령 없음</td></tr></c:if>

@@ -2,10 +2,12 @@
 target/
 *.class
 
-# Logs / runtime
+# Logs / runtime (anchored so source packages like transport/spool are not ignored)
 logs/
 *.log
-spool/
+/spool/
+/*/spool/
+/opt/pmc-agent/spool/
 
 # IDE
 .idea/

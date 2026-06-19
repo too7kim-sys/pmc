@@ -1,5 +1,5 @@
 <%@ include file="/WEB-INF/jsp/inc/header.jspf" %>
-<h2 class="page">정기점검 계획 상세 — ${plan.planName}</h2>
+<h2 class="page">정기점검 계획 상세 — <c:out value="${plan.planName}"/></h2>
 
 <div class="card">
     <p>주기: ${plan.cycle} · 예정일: ${plan.plannedDate} · 점검자: ${plan.inspectorId} · 결재자: ${plan.approverId}</p>
@@ -40,7 +40,7 @@
         <tr><th>호스트</th><th>OS</th><th>서비스</th><th>실적</th><th>종합판정</th><th>완료일</th><th>연계/수동</th></tr>
         <c:forEach var="t" items="${plan.targets}">
             <tr>
-                <td>${t.hostname}</td><td>${t.osType}</td><td>${t.serviceName}</td>
+                <td><c:out value="${t.hostname}"/></td><td><c:out value="${t.osType}"/></td><td><c:out value="${t.serviceName}"/></td>
                 <td><span class="st ${t.resultStatus=='DONE'?'NORMAL':'NA'}">${t.resultStatus}</span></td>
                 <td><c:if test="${not empty t.overallStatus}"><span class="st ${t.overallStatus}">${t.overallStatus}</span></c:if></td>
                 <td>${t.doneDt}</td>

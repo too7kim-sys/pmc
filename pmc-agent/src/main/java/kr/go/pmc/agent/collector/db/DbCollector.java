@@ -64,11 +64,6 @@ public class DbCollector extends AbstractCollector {
         return out;
     }
 
-    private boolean procContains(CollectContext ctx, String needle) {
-        CommandRunner.Result r = ctx.runner().run(ctx.timeoutMs(), "pgrep", "-f", needle);
-        return r.isSuccess() && !r.getStdout().trim().isEmpty();
-    }
-
     private boolean portListening(CollectContext ctx, String port) {
         CommandRunner.Result r = ctx.runner().run(ctx.timeoutMs(), "ss", "-ltn");
         if (!r.isSuccess()) {

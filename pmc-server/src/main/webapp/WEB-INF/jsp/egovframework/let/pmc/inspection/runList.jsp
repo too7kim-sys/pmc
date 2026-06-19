@@ -5,7 +5,7 @@
         <tr><th>호스트</th><th>유형</th><th>종합판정</th><th>항목</th><th>주의</th><th>위험</th><th>오류</th><th>수신시각</th><th></th></tr>
         <c:forEach var="r" items="${runs}">
             <tr>
-                <td>${r.hostname}</td><td>${r.runType}</td>
+                <td><c:out value="${r.hostname}"/></td><td>${r.runType}</td>
                 <td><span class="st ${r.overallStatus}">${r.overallStatus}</span></td>
                 <td>${r.itemCount}</td><td>${r.warnCount}</td><td>${r.criticalCount}</td><td>${r.errorCount}</td>
                 <td>${r.receivedAt}</td>

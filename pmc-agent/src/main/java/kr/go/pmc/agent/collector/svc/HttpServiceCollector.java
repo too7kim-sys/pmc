@@ -98,6 +98,8 @@ public class HttpServiceCollector extends AbstractCollector {
             body = readBody(conn);
         } catch (Exception e) {
             connError = e.getClass().getSimpleName() + ": " + e.getMessage();
+        } finally {
+            if (conn != null) conn.disconnect();
         }
         long elapsedMs = (System.nanoTime() - start) / 1_000_000L;
 

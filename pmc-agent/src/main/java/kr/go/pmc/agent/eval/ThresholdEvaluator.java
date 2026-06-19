@@ -89,7 +89,8 @@ public class ThresholdEvaluator {
         Double v = toDouble(value);
         Double c = toDouble(compare);
         if (v != null && c != null) {
-            return v.doubleValue() == c.doubleValue();
+            // 부동소수점 오차를 고려한 동등 비교(== 직접 비교 금지)
+            return Math.abs(v - c) < 1e-9;
         }
         return value.trim().equals(compare.trim());
     }

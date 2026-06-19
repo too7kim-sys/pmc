@@ -69,9 +69,4 @@ public class WasCollector extends AbstractCollector {
         out.add(port);
         return out;
     }
-
-    private boolean procContains(CollectContext ctx, String needle) {
-        CommandRunner.Result r = ctx.runner().run(ctx.timeoutMs(), "pgrep", "-f", needle);
-        return r.isSuccess() && !r.getStdout().trim().isEmpty();
-    }
 }

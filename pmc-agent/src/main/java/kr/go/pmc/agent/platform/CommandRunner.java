@@ -99,6 +99,7 @@ public class CommandRunner {
             if (proc != null) proc.destroyForcibly();
             return new Result("", "interrupted", -1, true);
         } catch (RuntimeException e) {
+            if (proc != null) proc.destroyForcibly();
             return new Result("", "error: " + e.getMessage(), -1, false);
         }
     }

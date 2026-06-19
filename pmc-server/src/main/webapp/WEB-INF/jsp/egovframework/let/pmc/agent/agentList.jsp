@@ -31,8 +31,8 @@
         <tr><th>ID</th><th>호스트</th><th>IP</th><th>OS</th><th>서비스</th><th>부서</th><th>Agent 토큰발급</th></tr>
         <c:forEach var="s" items="${servers}">
             <tr>
-                <td>${s.serverId}</td><td>${s.hostname}</td><td>${s.ipAddr}</td>
-                <td>${s.osType}</td><td>${s.serviceName}</td><td>${s.deptCode}</td>
+                <td>${s.serverId}</td><td><c:out value="${s.hostname}"/></td><td><c:out value="${s.ipAddr}"/></td>
+                <td><c:out value="${s.osType}"/></td><td><c:out value="${s.serviceName}"/></td><td><c:out value="${s.deptCode}"/></td>
                 <td>
                     <form class="inline" method="post" action="<c:url value='/pmc/agent/issueToken.do'/>">
                         <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
@@ -53,9 +53,9 @@
         <tr><th>호스트</th><th>상태</th><th>버전</th><th>정책</th><th>실행주기</th><th>마지막 Heartbeat</th><th>제어</th></tr>
         <c:forEach var="a" items="${agents}">
             <tr>
-                <td>${a.hostname}</td>
+                <td><c:out value="${a.hostname}"/></td>
                 <td><span class="st ${a.status=='ACTIVE'?'NORMAL':'NA'}">${a.status}</span></td>
-                <td>${a.agentVersion}</td><td>${a.policyId}</td><td>${a.scheduleCron}</td>
+                <td><c:out value="${a.agentVersion}"/></td><td>${a.policyId}</td><td><c:out value="${a.scheduleCron}"/></td>
                 <td>${a.lastHeartbeat}</td>
                 <td><a class="btn" href="<c:url value='/pmc/agent/control.do'/>?agentId=${a.agentId}">원격제어</a></td>
             </tr>

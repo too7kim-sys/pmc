@@ -43,6 +43,13 @@ public class DqServiceImpl implements DqService {
             }
             Long ruleId = ((Number) rule.get("ruleId")).longValue();
             String sql = String.valueOf(rule.get("checkSql"));
+            // 방어적 가드: 점검 룰은 위반 건수를 세는 단일 SELECT 만 허용(DML/DDL 차단)
+            if (!isSafeSelect(sql)) {
+                log.warn("데이터품질 룰 차단(SELECT 아님) ruleId={}", ruleId);
+                dqMapper.insertResult(ruleId, 0L, "ERROR");
+                cnt++;
+                continue;
+            }
             try {
                 Long violations = dqMapper.executeCount(sql);
                 long v = violations == null ? 0 : violations;
@@ -54,5 +61,15 @@ public class DqServiceImpl implements DqService {
             cnt++;
         }
         return cnt;
+    }
+
+    /** 단일 SELECT 문인지 검사(세미콜론으로 구문을 이어붙이는 인젝션 차단). */
+    private boolean isSafeSelect(String sql) {
+        if (sql == null) return false;
+        String s = sql.trim();
+        if (!s.toLowerCase().startsWith("select")) return false;
+        // 끝의 세미콜론 1개는 허용하되, 중간 세미콜론(다중 구문)은 차단
+        int semi = s.indexOf(';');
+        return semi < 0 || semi == s.length() - 1;
     }
 }
