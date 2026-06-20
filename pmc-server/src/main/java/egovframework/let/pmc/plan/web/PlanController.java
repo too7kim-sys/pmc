@@ -60,8 +60,10 @@ public class PlanController {
     }
 
     @PostMapping("/runAuto.do")
-    public String runAuto(@RequestParam Long planId, Principal principal) {
-        planService.runAuto(planId, principal != null ? principal.getName() : "admin");
+    public String runAuto(@RequestParam Long planId, Principal principal,
+                          org.springframework.web.servlet.mvc.support.RedirectAttributes ra) {
+        int issued = planService.runAuto(planId, principal != null ? principal.getName() : "admin");
+        ra.addFlashAttribute("msg", "자동 점검 명령 " + issued + "건 발행(활성 Agent 미존재 대상은 제외)");
         return "redirect:/pmc/plan/detail.do?planId=" + planId;
     }
 

@@ -122,9 +122,16 @@
         VALUES(CAST(#{agentId} AS uuid), #{commandType}, #{params}, 'PENDING', #{requestedBy})
     </insert>
 
+    <!--
+      대기 명령: 신규(PENDING) + 재전달 대상(SENT 이면서 마지막 전달 후 3분 경과 & 재전달 5회 미만).
+      ack 누락 시에도 매 heartbeat(60s)마다 재전달되어 비멱등 명령이 반복 실행되던 문제를 방지.
+    -->
     <select id="selectPendingCommands" resultMap="cmdMap">
         SELECT * FROM pmc_agent_command
-         WHERE agent_id=CAST(#{agentId} AS uuid) AND status IN ('PENDING','SENT')
+         WHERE agent_id=CAST(#{agentId} AS uuid)
+           AND ( status='PENDING'
+                 OR (status='SENT' AND send_count &lt; 5
+                     AND picked_at &lt; now() - interval '3 minutes') )
          ORDER BY command_id ASC
     </select>
 
@@ -134,9 +141,23 @@
          ORDER BY command_id DESC LIMIT 50
     </select>
 
+    <!-- 전달 표시 + 전달 횟수 증가(selectPendingCommands 와 동일 조건). -->
     <update id="markCommandsSent">
-        UPDATE pmc_agent_command SET status='SENT', picked_at=now()
-         WHERE agent_id=CAST(#{agentId} AS uuid) AND status='PENDING'
+        UPDATE pmc_agent_command
+           SET status='SENT', picked_at=now(), send_count=send_count+1
+         WHERE agent_id=CAST(#{agentId} AS uuid)
+           AND ( status='PENDING'
+                 OR (status='SENT' AND send_count &lt; 5
+                     AND picked_at &lt; now() - interval '3 minutes') )
+    </update>
+
+    <!-- 재전달 한도(5회) 소진 & 미ack 명령을 FAILED 로 만료(큐 적체/무한 SENT 방지). -->
+    <update id="expireStaleCommands">
+        UPDATE pmc_agent_command
+           SET status='FAILED', result_msg='no ack (max retries exceeded)', completed_at=now()
+         WHERE agent_id=CAST(#{agentId} AS uuid)
+           AND status='SENT' AND send_count &gt;= 5
+           AND picked_at &lt; now() - interval '3 minutes'
     </update>
 
     <update id="ackCommand">

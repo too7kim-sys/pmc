@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS pmc_agent_command (
     command_type  VARCHAR(20)  NOT NULL,       -- RUN_NOW/START/STOP/SET_SCHEDULE/UPDATE_CONFIG/UPDATE_POLICY
     params        TEXT,                        -- JSON (분류범위, cron 등)
     status        VARCHAR(20)  NOT NULL DEFAULT 'PENDING', -- PENDING/SENT/ACKED/DONE/FAILED
+    send_count    INT          NOT NULL DEFAULT 0,         -- 전달(재전달) 횟수, 무한 재전달/재실행 방지
     result_msg    TEXT,
     requested_by  VARCHAR(40),
     requested_at  TIMESTAMPTZ  NOT NULL DEFAULT now(),

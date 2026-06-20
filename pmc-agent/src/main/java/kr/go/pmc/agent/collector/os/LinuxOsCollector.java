@@ -155,25 +155,46 @@ public class LinuxOsCollector extends AbstractCollector {
         if (!r.isSuccess()) {
             return one(error(Category.OS, "OS_DISK_USAGE", "디스크 사용률", "df 실행 실패: " + r.getStderr()));
         }
-        int maxPct = -1;
-        String maxMount = "";
-        String[] lines = r.getStdout().split("\\R");
-        for (int i = 1; i < lines.length; i++) {
-            String[] c = lines[i].trim().split("\\s+");
-            if (c.length >= 6) {
-                int pct = (int) parseLong(c[4].replace("%", ""), -1);
-                if (pct > maxPct) {
-                    maxPct = pct;
-                    maxMount = c[5];
-                }
-            }
-        }
-        if (maxPct < 0) {
+        Usage u = parseMaxPercent(r.getStdout());
+        if (u == null) {
             return one(error(Category.OS, "OS_DISK_USAGE", "디스크 사용률", "df 파싱 실패"));
         }
-        ResultItem it = value(Category.OS, "OS_DISK_USAGE", "디스크 사용률", String.valueOf(maxPct), "%");
-        it.setRaw("mount=" + maxMount);
+        ResultItem it = value(Category.OS, "OS_DISK_USAGE", "디스크 사용률", String.valueOf(u.pct), "%");
+        it.setRaw("mount=" + u.mount);
         return one(it);
+    }
+
+    /** 사용률(%)/마운트 보관. */
+    private static final class Usage {
+        final int pct; final String mount;
+        Usage(int pct, String mount) { this.pct = pct; this.mount = mount; }
+    }
+
+    /**
+     * df 류 출력에서 최대 사용률(%)과 해당 마운트를 추출.
+     * 고정 컬럼 인덱스 대신 'NN%' 토큰을 직접 찾고 마운트는 마지막 토큰으로 사용 →
+     * 긴 디바이스명이 줄바꿈(wrap)되어 컬럼 수가 달라져도 견고하게 동작.
+     */
+    private Usage parseMaxPercent(String stdout) {
+        int maxPct = -1;
+        String maxMount = "";
+        String[] lines = stdout.split("\\R");
+        for (int i = 1; i < lines.length; i++) {
+            String[] c = lines[i].trim().split("\\s+");
+            if (c.length < 2) continue;            // 디바이스명만 있는 wrap 라인은 건너뜀
+            int pct = -1;
+            for (String tok : c) {
+                if (tok.endsWith("%")) {
+                    pct = (int) parseLong(tok.substring(0, tok.length() - 1), -1);
+                    break;
+                }
+            }
+            if (pct > maxPct) {
+                maxPct = pct;
+                maxMount = c[c.length - 1];        // 마운트 지점은 마지막 토큰
+            }
+        }
+        return maxPct < 0 ? null : new Usage(maxPct, maxMount);
     }
 
     // inode 사용률 — df -i
@@ -182,24 +203,12 @@ public class LinuxOsCollector extends AbstractCollector {
         if (!r.isSuccess()) {
             return one(na(Category.OS, "OS_INODE_USAGE", "inode 사용률", "df -i 미지원"));
         }
-        int maxPct = -1;
-        String maxMount = "";
-        String[] lines = r.getStdout().split("\\R");
-        for (int i = 1; i < lines.length; i++) {
-            String[] c = lines[i].trim().split("\\s+");
-            if (c.length >= 6) {
-                int pct = (int) parseLong(c[4].replace("%", ""), -1);
-                if (pct > maxPct) {
-                    maxPct = pct;
-                    maxMount = c[5];
-                }
-            }
-        }
-        if (maxPct < 0) {
+        Usage u = parseMaxPercent(r.getStdout());
+        if (u == null) {
             return one(na(Category.OS, "OS_INODE_USAGE", "inode 사용률", "inode 정보 없음"));
         }
-        ResultItem it = value(Category.OS, "OS_INODE_USAGE", "inode 사용률", String.valueOf(maxPct), "%");
-        it.setRaw("mount=" + maxMount);
+        ResultItem it = value(Category.OS, "OS_INODE_USAGE", "inode 사용률", String.valueOf(u.pct), "%");
+        it.setRaw("mount=" + u.mount);
         return one(it);
     }
 

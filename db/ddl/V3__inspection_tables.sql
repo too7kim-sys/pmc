@@ -9,10 +9,12 @@ CREATE TABLE IF NOT EXISTS pmc_inspection_run (
     policy_id      BIGINT,
     policy_version INT,
     plan_id        BIGINT,                     -- 정기점검 계획 연계(nullable)
-    run_type       VARCHAR(10)  NOT NULL DEFAULT 'AUTO', -- AUTO/MANUAL
+    run_type       VARCHAR(10)  NOT NULL DEFAULT 'AUTO'
+                   CHECK (run_type IN ('AUTO','MANUAL')),
     started_at     TIMESTAMPTZ,
     finished_at    TIMESTAMPTZ,
-    overall_status VARCHAR(10),                -- NORMAL/WARN/CRITICAL/ERROR
+    overall_status VARCHAR(10)                 -- NORMAL/WARN/CRITICAL/ERROR/NA
+                   CHECK (overall_status IN ('NORMAL','WARN','CRITICAL','ERROR','NA')),
     item_count     INT          NOT NULL DEFAULT 0,
     warn_count     INT          NOT NULL DEFAULT 0,
     critical_count INT          NOT NULL DEFAULT 0,
@@ -32,8 +34,10 @@ CREATE TABLE IF NOT EXISTS pmc_inspection_result_item (
     item_name         VARCHAR(200),
     value             VARCHAR(2000),
     unit              VARCHAR(20),
-    status            VARCHAR(10)  NOT NULL DEFAULT 'NORMAL', -- NORMAL/WARN/CRITICAL/ERROR/NA
-    source            VARCHAR(10)  NOT NULL DEFAULT 'AUTO',   -- AUTO/MANUAL
+    status            VARCHAR(10)  NOT NULL DEFAULT 'NORMAL'
+                      CHECK (status IN ('NORMAL','WARN','CRITICAL','ERROR','NA')),
+    source            VARCHAR(10)  NOT NULL DEFAULT 'AUTO'
+                      CHECK (source IN ('AUTO','MANUAL')),
     input_user        VARCHAR(40),                            -- 수동 입력자
     threshold_warn    VARCHAR(200),
     threshold_critical VARCHAR(200),

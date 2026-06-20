@@ -122,6 +122,8 @@ public class AgentServiceImpl implements AgentService {
         agentMapper.updateHeartbeat(agentId, agentVersion);
         AgentVO agent = agentMapper.selectAgent(agentId);
 
+        // 재전달 한도 소진 명령 만료 후, 대기/재전달 대상 조회 → 전달 표시
+        agentMapper.expireStaleCommands(agentId);
         List<AgentCommandVO> pending = agentMapper.selectPendingCommands(agentId);
         if (!pending.isEmpty()) {
             agentMapper.markCommandsSent(agentId);

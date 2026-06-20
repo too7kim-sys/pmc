@@ -70,7 +70,7 @@ public class IngestServiceImpl implements IngestService {
         run.setPolicyId(policyId);
         run.setPolicyVersion(r.policyVersion);
         run.setPlanId(r.planId);
-        run.setRunType(r.runType != null ? r.runType : "AUTO");
+        run.setRunType(normalizeRunType(r.runType));
         run.setStartedAt(parse(r.startedAt));
         run.setFinishedAt(parse(r.finishedAt));
         run.setSourceIp(sourceIp);
@@ -86,7 +86,7 @@ public class IngestServiceImpl implements IngestService {
                 vo.setItemName(it.name);
                 vo.setValue(it.value);
                 vo.setUnit(it.unit);
-                vo.setStatus(it.status != null ? it.status : "NORMAL");
+                vo.setStatus(normalizeStatus(it.status));
                 vo.setSource("AUTO");
                 vo.setThresholdWarn(it.thresholdWarn);
                 vo.setThresholdCritical(it.thresholdCritical);
@@ -176,6 +176,23 @@ public class IngestServiceImpl implements IngestService {
         if (crit > 0) return "CRITICAL";
         if (warn > 0) return "WARN";
         return "NORMAL";
+    }
+
+    private static final java.util.Set<String> VALID_STATUS = new java.util.HashSet<>(
+            java.util.Arrays.asList("NORMAL", "WARN", "CRITICAL", "ERROR", "NA"));
+
+    /** 항목 판정값을 허용 집합으로 정규화(null→NORMAL, 미지정 값→NA). 임의 문자열 DB 유입 차단. */
+    private String normalizeStatus(String status) {
+        if (status == null) return "NORMAL";
+        String s = status.trim().toUpperCase();
+        return VALID_STATUS.contains(s) ? s : "NA";
+    }
+
+    /** 실행 유형 정규화(AUTO/MANUAL 외에는 AUTO). */
+    private String normalizeRunType(String runType) {
+        if (runType == null) return "AUTO";
+        String s = runType.trim().toUpperCase();
+        return ("AUTO".equals(s) || "MANUAL".equals(s)) ? s : "AUTO";
     }
 
     private boolean isUuid(String s) {

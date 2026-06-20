@@ -10,15 +10,20 @@ import egovframework.let.pmc.plan.service.PlanMapper;
 import egovframework.let.pmc.plan.service.PlanService;
 import egovframework.let.pmc.plan.service.PlanTargetVO;
 import egovframework.let.pmc.plan.service.PlanVO;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 @Service
 public class PlanServiceImpl implements PlanService {
+
+    private static final Logger log = LoggerFactory.getLogger(PlanServiceImpl.class);
 
     private final PlanMapper planMapper;
     private final AgentMapper agentMapper;
@@ -69,6 +74,7 @@ public class PlanServiceImpl implements PlanService {
     @Transactional
     public int runAuto(Long planId, String requestedBy) {
         int issued = 0;
+        List<Long> skipped = new ArrayList<>();
         List<PlanTargetVO> targets = planMapper.selectTargets(planId);
         for (PlanTargetVO t : targets) {
             String agentId = agentMapper.selectActiveAgentIdByServer(t.getServerId());
@@ -76,7 +82,14 @@ public class PlanServiceImpl implements PlanService {
                 String params = "{\"planId\":" + planId + "}";
                 agentService.issueCommand(agentId, "RUN_NOW", params, requestedBy);
                 issued++;
+            } else {
+                // 활성 Agent 없는 대상은 명령 미발행 → 누락 사실을 기록(조용한 부분 디스패치 방지)
+                skipped.add(t.getServerId());
             }
+        }
+        if (!skipped.isEmpty()) {
+            log.warn("정기점검 자동실행 부분 디스패치 planId={} 발행={} 누락(활성 Agent 없음)={} serverIds={}",
+                    planId, issued, skipped.size(), skipped);
         }
         planMapper.updateStatus(planId, "IN_PROGRESS");
         return issued;

@@ -34,6 +34,8 @@ public interface AgentMapper {
     List<AgentCommandVO> selectPendingCommands(@Param("agentId") String agentId);
     List<AgentCommandVO> selectCommandHistory(@Param("agentId") String agentId);
     void markCommandsSent(@Param("agentId") String agentId);
+    /** 재전달 한도 소진 & 미ack 명령을 FAILED 로 만료. */
+    void expireStaleCommands(@Param("agentId") String agentId);
     void ackCommand(@Param("agentId") String agentId, @Param("commandId") Long commandId,
                     @Param("status") String status, @Param("resultMsg") String resultMsg);
 }
