@@ -65,10 +65,10 @@ public class ServerClient {
                     ? d.get("policyId").asInt() : null;
             return rr;
         } catch (IOException e) {
-            log.warn("등록 통신 실패: {}", e.getMessage());
+            log.warn("등록 통신 실패", e);
             return null;
         } catch (RuntimeException e) {
-            log.warn("등록 처리 오류: {}", e.getMessage());
+            log.warn("등록 처리 오류", e);
             return null;
         }
     }
@@ -103,10 +103,10 @@ public class ServerClient {
             }
             return hr;
         } catch (IOException e) {
-            log.warn("Heartbeat 통신 실패: {}", e.getMessage());
+            log.warn("Heartbeat 통신 실패", e);
             return null;
         } catch (RuntimeException e) {
-            log.warn("Heartbeat 처리 오류: {}", e.getMessage());
+            log.warn("Heartbeat 처리 오류", e);
             return null;
         }
     }
@@ -136,11 +136,11 @@ public class ServerClient {
             out.policy = JsonMapper.get().treeToValue(d, PolicyDoc.class);
             return out;
         } catch (IOException e) {
-            log.warn("정책 풀 통신 실패: {}", e.getMessage());
+            log.warn("정책 풀 통신 실패", e);
             out.error = true;
             return out;
         } catch (RuntimeException e) {
-            log.warn("정책 풀 처리 오류: {}", e.getMessage());
+            log.warn("정책 풀 처리 오류", e);
             out.error = true;
             return out;
         }
@@ -160,10 +160,10 @@ public class ServerClient {
             }
             return ok;
         } catch (IOException e) {
-            log.warn("결과 전송 통신 실패: {}", e.getMessage());
+            log.warn("결과 전송 통신 실패", e);
             return false;
         } catch (RuntimeException e) {
-            log.warn("결과 전송 처리 오류: {}", e.getMessage());
+            log.warn("결과 전송 처리 오류", e);
             return false;
         }
     }
@@ -181,10 +181,10 @@ public class ServerClient {
             ApiResponse api = parse(resp);
             return api != null && api.isSuccess();
         } catch (IOException e) {
-            log.warn("명령 ack 통신 실패(cmd={}): {}", commandId, e.getMessage());
+            log.warn("명령 ack 통신 실패(cmd={})", commandId, e);
             return false;
         } catch (RuntimeException e) {
-            log.warn("명령 ack 처리 오류(cmd={}): {}", commandId, e.getMessage());
+            log.warn("명령 ack 처리 오류(cmd={})", commandId, e);
             return false;
         }
     }

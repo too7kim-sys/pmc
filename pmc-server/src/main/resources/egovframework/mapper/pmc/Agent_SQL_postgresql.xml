@@ -52,16 +52,26 @@
         VALUES(CAST(#{agentId} AS uuid), #{serverId}, 'PENDING', #{enrollToken}, 'INACTIVE', #{policyId}, 'admin')
     </insert>
 
+    <!--
+      등록 토큰 조회: 미활성(INACTIVE) 또는 이미 활성(ACTIVE, 재시도)된 agent 를 TTL 윈도우 내에서 허용.
+      응답 유실로 agent 가 enroll 을 재시도하면 TTL(분) 안에서 키를 재발급(회전)할 수 있다.
+    -->
     <select id="selectAgentByEnrollToken" resultMap="agentMap">
         SELECT a.*, s.hostname, s.ip_addr, s.os_type, s.os_version
           FROM pmc_agent a JOIN pmc_server s ON s.server_id=a.server_id
-         WHERE a.enroll_token = #{token} AND a.status='INACTIVE'
+         WHERE a.enroll_token = #{token}
+           AND a.status IN ('INACTIVE','ACTIVE')
+           AND a.reg_dt > now() - make_interval(mins => #{ttlMin})
     </select>
 
+    <!--
+      활성화 = API 키 해시 회전(이전 키 무효화). enroll_token 은 NULL 로 지우지 않고 유지하여
+      TTL 윈도우 내 재시도(키 재발급)를 허용한다. 윈도우는 selectAgentByEnrollToken 의 reg_dt+TTL 로 제한.
+    -->
     <update id="activateAgent" parameterType="egovframework.let.pmc.agent.service.AgentVO">
         UPDATE pmc_agent
            SET api_key_hash=#{apiKey}, agent_version=#{agentVersion}, status='ACTIVE',
-               enroll_token=NULL, upd_dt=now()
+               upd_dt=now()
          WHERE agent_id=CAST(#{agentId} AS uuid)
     </update>
 

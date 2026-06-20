@@ -19,7 +19,7 @@ public interface AgentMapper {
 
     // Agent
     void insertAgentEnroll(AgentVO vo);                 // INACTIVE + enroll_token
-    AgentVO selectAgentByEnrollToken(@Param("token") String token);
+    AgentVO selectAgentByEnrollToken(@Param("token") String token, @Param("ttlMin") int ttlMin);
     void activateAgent(AgentVO vo);                     // api_key_hash, agent_version, status=ACTIVE
     AgentVO selectAgent(@Param("agentId") String agentId);
     List<AgentVO> selectAgentList();

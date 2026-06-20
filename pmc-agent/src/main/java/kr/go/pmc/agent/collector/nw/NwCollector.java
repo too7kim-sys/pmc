@@ -67,8 +67,8 @@ public class NwCollector extends AbstractCollector {
         if (!r.isSuccess()) {
             r = ctx.runner().run(ctx.timeoutMs(), "netstat", "-rn");
         }
-        boolean has = r.isSuccess() && r.getStdout().toLowerCase().contains("default")
-                || (r.isSuccess() && r.getStdout().contains("0.0.0.0"));
+        boolean has = r.isSuccess()
+                && (r.getStdout().toLowerCase().contains("default") || r.getStdout().contains("0.0.0.0"));
         ResultItem it = value(Category.NW, "NW_DEFAULT_ROUTE", "기본 게이트웨이",
                 has ? "PRESENT" : "MISSING", "");
         it.setStatus(has ? ResultStatus.NORMAL : ResultStatus.CRITICAL);

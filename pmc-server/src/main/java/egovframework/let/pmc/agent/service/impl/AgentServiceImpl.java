@@ -8,6 +8,7 @@ import egovframework.let.pmc.common.ApiException;
 import egovframework.let.pmc.common.security.Hashing;
 import egovframework.let.pmc.policy.service.PolicyMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,10 @@ public class AgentServiceImpl implements AgentService {
 
     private final AgentMapper agentMapper;
     private final PolicyMapper policyMapper;
+
+    /** 등록 토큰 유효시간(분). 이 윈도우 내 enroll 재시도는 키 재발급(회전)으로 멱등 처리. */
+    @Value("${Globals.EnrollTokenTtlMin}")
+    private int enrollTokenTtlMin;
 
     @Autowired
     public AgentServiceImpl(AgentMapper agentMapper, PolicyMapper policyMapper) {
@@ -98,14 +103,15 @@ public class AgentServiceImpl implements AgentService {
     @Transactional
     public Map<String, Object> enroll(String enrollToken, String hostname, String ipAddr,
                                       String osType, String osVersion, String agentVersion) {
-        AgentVO agent = agentMapper.selectAgentByEnrollToken(enrollToken);
+        // TTL 윈도우 내에서만 토큰 유효(만료/소진 토큰 거부). 재시도 시 키를 회전해 멱등 동작.
+        AgentVO agent = agentMapper.selectAgentByEnrollToken(enrollToken, enrollTokenTtlMin);
         if (agent == null) {
-            throw new ApiException("INVALID_TOKEN", "유효하지 않은 등록 토큰입니다.");
+            throw new ApiException("INVALID_TOKEN", "유효하지 않거나 만료된 등록 토큰입니다.");
         }
         String apiKey = Hashing.randomToken(24);
         AgentVO upd = new AgentVO();
         upd.setAgentId(agent.getAgentId());
-        upd.setApiKey(Hashing.sha256(apiKey)); // 저장은 해시
+        upd.setApiKey(Hashing.sha256(apiKey)); // 저장은 해시(이전 키 무효화=회전)
         upd.setAgentVersion(agentVersion);
         agentMapper.activateAgent(upd);
 

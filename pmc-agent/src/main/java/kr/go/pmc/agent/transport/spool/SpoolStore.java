@@ -36,7 +36,7 @@ public class SpoolStore {
         try {
             Files.createDirectories(pendingDir);
         } catch (IOException e) {
-            log.warn("스풀 디렉토리 생성 실패({}): {}", pendingDir, e.getMessage());
+            log.warn("스풀 디렉토리 생성 실패({})", pendingDir, e);
         }
     }
 
@@ -59,7 +59,7 @@ public class SpoolStore {
             log.info("스풀 저장: {}", file);
             return file;
         } catch (IOException e) {
-            log.warn("스풀 저장 실패({}): {}", file, e.getMessage());
+            log.warn("스풀 저장 실패({})", file, e);
             return null;
         }
     }

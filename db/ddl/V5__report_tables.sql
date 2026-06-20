@@ -6,9 +6,9 @@ CREATE TABLE IF NOT EXISTS pmc_report (
     report_id    BIGSERIAL    PRIMARY KEY,
     report_type  VARCHAR(10)  NOT NULL,        -- PDF/XLSX/CSV
     scope_type   VARCHAR(20)  NOT NULL,        -- SINGLE_RUN/PLAN/SERVER_PERIOD
-    plan_id      BIGINT,
-    server_id    BIGINT,
-    run_id       UUID,
+    plan_id      BIGINT       REFERENCES pmc_inspection_plan(plan_id),  -- 서버 세팅(생성 시점)
+    server_id    BIGINT       REFERENCES pmc_server(server_id),
+    run_id       UUID         REFERENCES pmc_inspection_run(run_id),
     period_from  DATE,
     period_to    DATE,
     file_path    VARCHAR(500),

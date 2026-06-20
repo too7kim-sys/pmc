@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS pmc_inspection_plan_target (
     plan_id        BIGINT       NOT NULL REFERENCES pmc_inspection_plan(plan_id) ON DELETE CASCADE,
     server_id      BIGINT       NOT NULL REFERENCES pmc_server(server_id),
     result_status  VARCHAR(12)  NOT NULL DEFAULT 'PENDING', -- PENDING/DONE/SKIPPED
-    run_id         UUID,                       -- 연계된 점검 실행
+    run_id         UUID         REFERENCES pmc_inspection_run(run_id), -- 연계된 점검 실행(서버 세팅)
     done_dt        TIMESTAMPTZ,
     CONSTRAINT uq_pmc_plan_target UNIQUE (plan_id, server_id)
 );
