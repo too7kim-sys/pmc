@@ -34,7 +34,7 @@ public class PlanController {
 
     @GetMapping("/list.do")
     public String list(Model model) {
-        planService.markOverdue();
+        // OVERDUE 전환은 PlanOverdueScheduler 배치가 처리(조회 GET 에서 쓰기 제거)
         model.addAttribute("plans", planService.getPlanList());
         return "egovframework/let/pmc/plan/planList";
     }

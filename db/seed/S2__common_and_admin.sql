@@ -85,4 +85,4 @@ INSERT INTO pmc_dq_rule(rule_name, target_table, rule_type, check_sql, severity)
    'SELECT count(*) FROM pmc_inspection_result_item r WHERE NOT EXISTS (SELECT 1 FROM pmc_inspection_run x WHERE x.run_id=r.run_id)','CRITICAL'),
   ('서버 OS유형 코드 무결성','pmc_server','CODE',
    'SELECT count(*) FROM pmc_server s WHERE s.os_type NOT IN (SELECT code FROM comtccmmncodedetail WHERE cl_code=''OS_TYPE'')','WARN')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (rule_name) DO NOTHING;

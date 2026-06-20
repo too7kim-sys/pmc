@@ -39,6 +39,9 @@ public class GzipRequestFilter implements Filter {
         chain.doFilter(request, response);
     }
 
+    /** 압축 해제 결과 본문 최대 크기(zip-bomb 방지). 초과 시 IOException. */
+    private static final long MAX_INFLATED_BYTES = 32L * 1024 * 1024; // 32MB
+
     private static class GzipRequestWrapper extends HttpServletRequestWrapper {
         private final ServletInputStream stream;
 
@@ -46,9 +49,25 @@ public class GzipRequestFilter implements Filter {
             super(request);
             final GZIPInputStream gz = new GZIPInputStream(request.getInputStream());
             this.stream = new ServletInputStream() {
-                @Override public int read() throws IOException { return gz.read(); }
-                @Override public boolean isFinished() { return false; }
-                @Override public boolean isReady() { return true; }
+                private boolean finished = false;
+                private long total = 0;
+
+                @Override public int read() throws IOException {
+                    int b = gz.read();
+                    if (b < 0) {
+                        finished = true;          // EOF 도달 → isFinished 정확히 반영
+                        gz.close();               // 해제 스트림 닫기(자원 누수 방지)
+                        return -1;
+                    }
+                    if (++total > MAX_INFLATED_BYTES) {
+                        gz.close();
+                        throw new IOException("압축 해제 본문이 허용 크기를 초과했습니다.");
+                    }
+                    return b;
+                }
+
+                @Override public boolean isFinished() { return finished; }
+                @Override public boolean isReady() { return !finished; }
                 @Override public void setReadListener(ReadListener l) { }
             };
         }

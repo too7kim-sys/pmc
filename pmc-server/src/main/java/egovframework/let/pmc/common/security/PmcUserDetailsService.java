@@ -35,8 +35,12 @@ public class PmcUserDetailsService implements UserDetailsService {
         }
         List<String> roles = userMapper.selectAuthorities(username);
         List<GrantedAuthority> authorities = new ArrayList<>();
-        for (String r : roles) {
-            authorities.add(new SimpleGrantedAuthority(r));
+        if (roles != null) {
+            for (String r : roles) {
+                if (r != null && !r.trim().isEmpty()) {
+                    authorities.add(new SimpleGrantedAuthority(r));
+                }
+            }
         }
         boolean locked = "Y".equals(String.valueOf(u.get("lockAt")));
         boolean enabled = "P".equals(String.valueOf(u.get("emplyrSttus")));

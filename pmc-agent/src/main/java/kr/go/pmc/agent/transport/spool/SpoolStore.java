@@ -47,7 +47,9 @@ public class SpoolStore {
     /** 결과를 gzip JSON 으로 저장. 저장된 파일 경로 반환(실패 시 null). */
     public Path write(InspectionResult result) {
         String runId = result.getRunId() == null ? "unknown-" + System.nanoTime() : result.getRunId();
-        Path file = pendingDir.resolve(runId + ".json.gz");
+        // 파일명 안전화: 영숫자/_/- 외 문자는 '_' 로 치환(경로 우회 '/','..' 차단)
+        String safe = runId.replaceAll("[^A-Za-z0-9_-]", "_");
+        Path file = pendingDir.resolve(safe + ".json.gz");
         try {
             byte[] json = JsonMapper.get().writeValueAsBytes(result);
             try (OutputStream os = Files.newOutputStream(file);

@@ -123,29 +123,18 @@ public class ThresholdEvaluator {
         }
     }
 
+    /** 선행 부호/지수를 포함한 수치 + 후행 단위(%, ms 등) 허용. 예: "+90", "1.5e3", "37.2%". */
+    private static final java.util.regex.Pattern NUMBER_PREFIX =
+            java.util.regex.Pattern.compile("^[+-]?\\d+(?:\\.\\d+)?(?:[eE][+-]?\\d+)?");
+
     private Double toDouble(String s) {
         if (s == null) return null;
         String t = s.trim();
         if (t.isEmpty()) return null;
-        // 후행 단위(%, ms 등) 제거 시도
-        StringBuilder sb = new StringBuilder();
-        boolean seenDot = false;
-        for (int i = 0; i < t.length(); i++) {
-            char ch = t.charAt(i);
-            if (ch == '-' && i == 0) {
-                sb.append(ch);
-            } else if (ch == '.' && !seenDot) {
-                seenDot = true;
-                sb.append(ch);
-            } else if (Character.isDigit(ch)) {
-                sb.append(ch);
-            } else {
-                break;
-            }
-        }
-        if (sb.length() == 0 || "-".contentEquals(sb)) return null;
+        java.util.regex.Matcher m = NUMBER_PREFIX.matcher(t);
+        if (!m.find()) return null;
         try {
-            return Double.parseDouble(sb.toString());
+            return Double.parseDouble(m.group());
         } catch (NumberFormatException e) {
             return null;
         }

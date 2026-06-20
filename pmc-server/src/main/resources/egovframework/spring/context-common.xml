@@ -2,10 +2,13 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:task="http://www.springframework.org/schema/task"
        xsi:schemaLocation="http://www.springframework.org/schema/beans
            http://www.springframework.org/schema/beans/spring-beans.xsd
            http://www.springframework.org/schema/context
-           http://www.springframework.org/schema/context/spring-context.xsd">
+           http://www.springframework.org/schema/context/spring-context.xsd
+           http://www.springframework.org/schema/task
+           http://www.springframework.org/schema/task/spring-task.xsd">
 
     <!-- globals.properties 로드 -->
     <context:property-placeholder location="classpath:globals.properties"/>
@@ -15,5 +18,9 @@
         <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
         <context:exclude-filter type="annotation" expression="org.springframework.web.bind.annotation.RestControllerAdvice"/>
     </context:component-scan>
+
+    <!-- @Scheduled 배치(정기점검 지연(OVERDUE) 전환 등) 활성화 -->
+    <task:annotation-driven scheduler="pmcScheduler"/>
+    <task:scheduler id="pmcScheduler" pool-size="2"/>
 
 </beans>

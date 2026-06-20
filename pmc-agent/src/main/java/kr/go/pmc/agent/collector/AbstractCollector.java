@@ -26,6 +26,10 @@ public abstract class AbstractCollector implements Collector {
 
     /** 정상/측정값 항목. status 는 엔진의 ThresholdEvaluator 가 채울 수 있음. */
     protected ResultItem value(Category category, String itemCode, String name, String value, String unit) {
+        // 값이 비어있으면(명령 출력 없음/미지원) NORMAL 오분류 대신 NA 로 보고
+        if (value == null || value.trim().isEmpty()) {
+            return na(category, itemCode, name, "값 없음(수집 실패 또는 미지원)");
+        }
         ResultItem it = item(category, itemCode, name);
         it.setValue(value);
         it.setUnit(unit);

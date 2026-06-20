@@ -2,6 +2,7 @@ package egovframework.let.pmc.ingest.service.impl;
 
 import egovframework.let.pmc.agent.service.AgentMapper;
 import egovframework.let.pmc.agent.service.AgentVO;
+import egovframework.let.pmc.common.ApiException;
 import egovframework.let.pmc.ingest.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -31,11 +32,19 @@ public class IngestServiceImpl implements IngestService {
     @Override
     @Transactional
     public Map<String, Object> ingest(IncomingResult r, String sourceIp) {
+        // 입력 검증 : runId 필수·UUID 형식(잘못된 UUID 캐스팅으로 인한 500 방지)
+        if (r.runId == null || !isUuid(r.runId)) {
+            throw new ApiException("INVALID_REQUEST", "runId 가 유효한 UUID 가 아닙니다.");
+        }
+        if (r.agentId != null && !isUuid(r.agentId)) {
+            throw new ApiException("INVALID_REQUEST", "agentId 가 유효한 UUID 가 아닙니다.");
+        }
+
         Map<String, Object> data = new HashMap<>();
         data.put("runId", r.runId);
 
         // 멱등 : 동일 runId 존재 시 무시
-        if (r.runId != null && inspectionMapper.countRun(r.runId) > 0) {
+        if (inspectionMapper.countRun(r.runId) > 0) {
             data.put("duplicated", true);
             InspectionRunVO existing = inspectionMapper.selectRun(r.runId);
             data.put("overallStatus", existing != null ? existing.getOverallStatus() : null);
@@ -167,6 +176,15 @@ public class IngestServiceImpl implements IngestService {
         if (crit > 0) return "CRITICAL";
         if (warn > 0) return "WARN";
         return "NORMAL";
+    }
+
+    private boolean isUuid(String s) {
+        try {
+            java.util.UUID.fromString(s);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
     }
 
     private OffsetDateTime parse(String iso) {

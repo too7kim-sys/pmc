@@ -75,6 +75,16 @@ class ThresholdEvaluatorTest {
     }
 
     @Test
+    void signAndExponentParsed() {
+        // 선행 '+' 부호(이전 파서는 null 처리되어 오분류)
+        assertTrue(ev.matches("+90", rule("WARN", "GTE", "80")));
+        // 지수 표기(1.5e3 = 1500)
+        assertTrue(ev.matches("1.5e3", rule("WARN", "GT", "1000")));
+        // 음수 비교
+        assertTrue(ev.matches("-5", rule("WARN", "LT", "0")));
+    }
+
+    @Test
     void criticalTakesPrecedenceOverWarn() {
         // 두 규칙 모두 만족(95 >= 80, 95 >= 90) → CRITICAL
         ResultStatus s = ev.evaluate("95", Arrays.asList(

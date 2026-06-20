@@ -4,7 +4,7 @@
 
 CREATE TABLE IF NOT EXISTS pmc_dq_rule (
     rule_id       BIGSERIAL    PRIMARY KEY,
-    rule_name     VARCHAR(200) NOT NULL,
+    rule_name     VARCHAR(200) NOT NULL UNIQUE,    -- 룰 식별(시드 재실행 멱등용)
     target_table  VARCHAR(60)  NOT NULL,
     rule_type     VARCHAR(20)  NOT NULL,       -- NOTNULL/RANGE/CODE/REFERENTIAL/CUSTOM
     check_sql     TEXT         NOT NULL,        -- 위반 건수를 반환하는 SELECT count(*) ...
