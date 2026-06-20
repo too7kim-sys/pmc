@@ -1,6 +1,7 @@
 package egovframework.let.pmc.report.service;
 
 import java.io.Serializable;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 public class ReportVO implements Serializable {
@@ -10,6 +11,8 @@ public class ReportVO implements Serializable {
     private Long planId;
     private Long serverId;
     private String runId;
+    private LocalDate periodFrom;
+    private LocalDate periodTo;
     private String filePath;
     private String fileName;
     private Long fileSize;
@@ -28,6 +31,10 @@ public class ReportVO implements Serializable {
     public void setServerId(Long serverId) { this.serverId = serverId; }
     public String getRunId() { return runId; }
     public void setRunId(String runId) { this.runId = runId; }
+    public LocalDate getPeriodFrom() { return periodFrom; }
+    public void setPeriodFrom(LocalDate periodFrom) { this.periodFrom = periodFrom; }
+    public LocalDate getPeriodTo() { return periodTo; }
+    public void setPeriodTo(LocalDate periodTo) { this.periodTo = periodTo; }
     public String getFilePath() { return filePath; }
     public void setFilePath(String filePath) { this.filePath = filePath; }
     public String getFileName() { return fileName; }

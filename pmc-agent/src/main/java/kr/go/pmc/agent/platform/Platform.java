@@ -24,7 +24,9 @@ public enum Platform {
         if (n.contains("aix")) return AIX;
         if (n.contains("hp-ux") || n.contains("hpux")) return HPUX;
         if (n.contains("sunos") || n.contains("solaris")) return SOLARIS;
-        if (n.contains("mac") || n.contains("darwin")) return LINUX; // 개발 환경 편의상 unix 계열로 취급
+        // macOS/Darwin 은 운영 배포 대상이 아니며, 개발자 로컬 검증 편의를 위해서만 LINUX 로 취급한다.
+        // (실제 macOS 에서는 /proc 부재 등으로 일부 수집 항목이 ERROR/NA 로 보고될 수 있음 — 정상 동작)
+        if (n.contains("mac") || n.contains("darwin")) return LINUX;
         return UNKNOWN;
     }
 }

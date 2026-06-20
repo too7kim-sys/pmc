@@ -108,7 +108,8 @@ public class ReportServiceImpl implements ReportService {
                         nz(it.getThresholdWarn()) + "/" + nz(it.getThresholdCritical()), nz(it.getStatus()));
             }
         }
-        ReportVO vo = saveAndRecord(data, type, "SINGLE_RUN", null, run.getServerId(), runId, "inspection-sheet");
+        ReportVO vo = saveAndRecord(data, type, "SINGLE_RUN", null, run.getServerId(), runId,
+                null, null, "inspection-sheet");
         return vo;
     }
 
@@ -134,11 +135,14 @@ public class ReportServiceImpl implements ReportService {
                         nz(t.getResultStatus()), nz(t.getOverallStatus()), fmt(t.getDoneDt()));
             }
         }
-        return saveAndRecord(data, type, "PLAN", planId, null, null, "plan-report");
+        return saveAndRecord(data, type, "PLAN", planId, null, null,
+                plan.getPeriodFrom(), plan.getPeriodTo(), "plan-report");
     }
 
     private ReportVO saveAndRecord(ReportData data, String type, String scope, Long planId,
-                                   Long serverId, String runId, String namePrefix) {
+                                   Long serverId, String runId,
+                                   java.time.LocalDate periodFrom, java.time.LocalDate periodTo,
+                                   String namePrefix) {
         ReportGenerator gen = generators.get(type);
         if (gen == null) {
             throw new IllegalArgumentException("지원하지 않는 보고서 유형: " + type);
@@ -158,6 +162,8 @@ public class ReportServiceImpl implements ReportService {
             vo.setPlanId(planId);
             vo.setServerId(serverId);
             vo.setRunId(runId);
+            vo.setPeriodFrom(periodFrom);
+            vo.setPeriodTo(periodTo);
             vo.setFilePath(file.toString());
             vo.setFileName(fileName);
             vo.setFileSize((long) bytes.length);
