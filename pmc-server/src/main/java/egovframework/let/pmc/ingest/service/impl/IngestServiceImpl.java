@@ -96,7 +96,14 @@ public class IngestServiceImpl implements IngestService {
         run.setErrorCount(err);
         run.setOverallStatus(worstOf(err, crit, warn));
 
-        inspectionMapper.insertRun(run);
+        // 멱등 INSERT : ON CONFLICT(run_id) DO NOTHING. 영향행 0이면 동시 중복 → 결과항목 적재 생략.
+        int inserted = inspectionMapper.insertRun(run);
+        if (inserted == 0) {
+            data.put("duplicated", true);
+            InspectionRunVO existing = inspectionMapper.selectRun(r.runId);
+            data.put("overallStatus", existing != null ? existing.getOverallStatus() : null);
+            return data;
+        }
         for (ResultItemVO vo : items) {
             inspectionMapper.insertResultItem(vo);
         }

@@ -5,8 +5,8 @@
         <tr><th>호스트</th><th>유형</th><th>종합판정</th><th>항목</th><th>주의</th><th>위험</th><th>오류</th><th>수신시각</th><th></th></tr>
         <c:forEach var="r" items="${runs}">
             <tr>
-                <td><c:out value="${r.hostname}"/></td><td>${r.runType}</td>
-                <td><span class="st ${r.overallStatus}">${r.overallStatus}</span></td>
+                <td><c:out value="${r.hostname}"/></td><td><c:out value="${r.runType}"/></td>
+                <td><span class="st ${fn:escapeXml(r.overallStatus)}"><c:out value="${r.overallStatus}"/></span></td>
                 <td>${r.itemCount}</td><td>${r.warnCount}</td><td>${r.criticalCount}</td><td>${r.errorCount}</td>
                 <td>${r.receivedAt}</td>
                 <td><a class="btn" href="<c:url value='/pmc/inspection/detail.do'/>?runId=${r.runId}">상세</a></td>

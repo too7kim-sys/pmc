@@ -141,7 +141,7 @@
 
     <update id="ackCommand">
         UPDATE pmc_agent_command SET status=#{status}, result_msg=#{resultMsg}, completed_at=now()
-         WHERE command_id=#{commandId}
+         WHERE command_id=#{commandId} AND agent_id=CAST(#{agentId} AS uuid)
     </update>
 
 </mapper>

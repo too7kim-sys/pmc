@@ -10,7 +10,8 @@ import java.util.Map;
 public interface InspectionMapper {
 
     int countRun(@Param("runId") String runId);
-    void insertRun(InspectionRunVO vo);
+    /** run_id 멱등 INSERT. 영향 행수 반환(0=동일 run_id 이미 존재). */
+    int insertRun(InspectionRunVO vo);
     void insertResultItem(ResultItemVO vo);
 
     List<InspectionRunVO> selectRunList(@Param("serverId") Long serverId);

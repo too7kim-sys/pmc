@@ -20,7 +20,15 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ApiResponse<Void>> handleApi(ApiException e) {
-        return ResponseEntity.badRequest().body(ApiResponse.fail(e.getCode(), e.getMessage()));
+        return ResponseEntity.status(statusFor(e.getCode()))
+                .body(ApiResponse.fail(e.getCode(), e.getMessage()));
+    }
+
+    /** 업무 예외 코드 → HTTP 상태 매핑(기본 400). */
+    private HttpStatus statusFor(String code) {
+        if ("FORBIDDEN".equals(code)) return HttpStatus.FORBIDDEN;          // 403
+        if ("UNAUTHORIZED".equals(code) || "INVALID_TOKEN".equals(code)) return HttpStatus.UNAUTHORIZED; // 401
+        return HttpStatus.BAD_REQUEST;                                       // 400
     }
 
     @ExceptionHandler(Exception.class)

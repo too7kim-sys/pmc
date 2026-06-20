@@ -34,6 +34,6 @@ public interface AgentMapper {
     List<AgentCommandVO> selectPendingCommands(@Param("agentId") String agentId);
     List<AgentCommandVO> selectCommandHistory(@Param("agentId") String agentId);
     void markCommandsSent(@Param("agentId") String agentId);
-    void ackCommand(@Param("commandId") Long commandId, @Param("status") String status,
-                    @Param("resultMsg") String resultMsg);
+    void ackCommand(@Param("agentId") String agentId, @Param("commandId") Long commandId,
+                    @Param("status") String status, @Param("resultMsg") String resultMsg);
 }

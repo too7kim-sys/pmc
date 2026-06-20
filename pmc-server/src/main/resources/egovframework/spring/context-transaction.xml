@@ -9,6 +9,9 @@
 
     <bean id="txManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
         <property name="dataSource" ref="dataSource"/>
+        <!-- 읽기전용 트랜잭션에서 'SET TRANSACTION READ ONLY' 강제 → DB 레벨에서 DML 차단
+             (데이터품질 룰 SELECT 실행 등 신뢰할 수 없는 SQL 보호) -->
+        <property name="enforceReadOnly" value="true"/>
     </bean>
 
     <tx:annotation-driven transaction-manager="txManager"/>

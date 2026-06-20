@@ -17,6 +17,7 @@
                #{serverId}, #{policyId}, #{policyVersion}, #{planId}, #{runType},
                #{startedAt}, #{finishedAt}, #{overallStatus}, #{itemCount}, #{warnCount},
                #{criticalCount}, #{errorCount}, #{sourceIp})
+        ON CONFLICT (run_id) DO NOTHING
     </insert>
 
     <insert id="insertResultItem" parameterType="egovframework.let.pmc.ingest.service.ResultItemVO">

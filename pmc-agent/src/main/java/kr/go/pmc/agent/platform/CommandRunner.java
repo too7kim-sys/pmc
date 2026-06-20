@@ -70,6 +70,12 @@ public class CommandRunner {
         Process proc = null;
         try {
             proc = pb.start();
+            // 자식 stdin 을 즉시 닫아 EOF 를 알린다(입력 대기 명령의 무한 행 + 디스크립터 누수 방지)
+            try {
+                proc.getOutputStream().close();
+            } catch (IOException ignore) {
+                // stdin close 실패는 무시(명령 실행에는 영향 없음)
+            }
             // stdout/stderr 를 별도 스레드로 비동기 소비(파이프 버퍼 데드락 방지)
             StreamGobbler outG = new StreamGobbler(proc.getInputStream(), charset);
             StreamGobbler errG = new StreamGobbler(proc.getErrorStream(), charset);
@@ -96,11 +102,14 @@ public class CommandRunner {
             return new Result("", "IOException: " + e.getMessage(), -1, false);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            if (proc != null) proc.destroyForcibly();
             return new Result("", "interrupted", -1, true);
         } catch (RuntimeException e) {
-            if (proc != null) proc.destroyForcibly();
             return new Result("", "error: " + e.getMessage(), -1, false);
+        } finally {
+            // 정상/예외 모든 경로에서 살아있는 프로세스 정리(핸들 누수 방지)
+            if (proc != null && proc.isAlive()) {
+                proc.destroyForcibly();
+            }
         }
     }
 

@@ -52,11 +52,9 @@ public class ReportController {
     @GetMapping("/download.do")
     public ResponseEntity<FileSystemResource> download(@RequestParam Long reportId) {
         ReportVO vo = reportService.getReport(reportId);
-        if (vo == null || vo.getFilePath() == null) {
-            return ResponseEntity.notFound().build();
-        }
-        File f = new File(vo.getFilePath());
-        if (!f.exists()) {
+        // 경로 우회(../) 차단 : 보고서 디렉터리 하위의 실제 파일만 반환
+        File f = reportService.resolveDownloadableFile(reportId);
+        if (vo == null || f == null) {
             return ResponseEntity.notFound().build();
         }
         String encoded = URLEncoder.encode(vo.getFileName(), StandardCharsets.UTF_8).replace("+", "%20");

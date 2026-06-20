@@ -34,6 +34,6 @@ public interface AgentService {
     /** 대기 명령 조회(폴링) */
     List<AgentCommandVO> getPendingCommands(String agentId);
 
-    /** 명령 결과 회신 */
-    void ackCommand(Long commandId, String status, String resultMsg);
+    /** 명령 결과 회신(agentId 로 명령 소유권 스코프) */
+    void ackCommand(String agentId, Long commandId, String status, String resultMsg);
 }

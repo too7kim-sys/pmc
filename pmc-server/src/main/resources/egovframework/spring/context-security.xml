@@ -26,7 +26,7 @@
           entry-point-ref="apiEntryPoint">
         <csrf disabled="true"/>
         <intercept-url pattern="/api/v1/agents/register" access="permitAll"/>
-        <intercept-url pattern="/api/v1/**" access="permitAll"/>
+        <intercept-url pattern="/api/v1/**" access="isAuthenticated()"/>
         <custom-filter ref="agentTokenAuthFilter" position="PRE_AUTH_FILTER"/>
     </http>
 

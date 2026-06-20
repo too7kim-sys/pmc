@@ -17,10 +17,12 @@ public class DqServiceImpl implements DqService {
     private static final Logger log = LoggerFactory.getLogger(DqServiceImpl.class);
 
     private final DqMapper dqMapper;
+    private final DqQueryExecutor queryExecutor;
 
     @Autowired
-    public DqServiceImpl(DqMapper dqMapper) {
+    public DqServiceImpl(DqMapper dqMapper, DqQueryExecutor queryExecutor) {
         this.dqMapper = dqMapper;
+        this.queryExecutor = queryExecutor;
     }
 
     @Override
@@ -51,8 +53,8 @@ public class DqServiceImpl implements DqService {
                 continue;
             }
             try {
-                Long violations = dqMapper.executeCount(sql);
-                long v = violations == null ? 0 : violations;
+                // SELECT 는 읽기전용 트랜잭션에서 실행(DB가 DML 차단)
+                long v = queryExecutor.countViolations(sql);
                 dqMapper.insertResult(ruleId, v, v > 0 ? "FAIL" : "PASS");
             } catch (Exception e) {
                 log.warn("데이터품질 룰 실행 실패 ruleId={}", ruleId, e);
@@ -63,13 +65,47 @@ public class DqServiceImpl implements DqService {
         return cnt;
     }
 
-    /** 단일 SELECT 문인지 검사(세미콜론으로 구문을 이어붙이는 인젝션 차단). */
-    private boolean isSafeSelect(String sql) {
+    /**
+     * 점검 룰이 안전한 단일 조회(SELECT/WITH...SELECT) 인지 검사.
+     * 세미콜론(다중 구문)·주석(--, /* *&#47;)·DML/DDL 키워드를 차단한다.
+     * (실행 자체는 읽기전용 트랜잭션으로 DB가 한 번 더 차단 — 본 검사는 방어선 1차)
+     */
+    boolean isSafeSelect(String sql) {
         if (sql == null) return false;
         String s = sql.trim();
-        if (!s.toLowerCase().startsWith("select")) return false;
-        // 끝의 세미콜론 1개는 허용하되, 중간 세미콜론(다중 구문)은 차단
-        int semi = s.indexOf(';');
-        return semi < 0 || semi == s.length() - 1;
+        if (s.isEmpty()) return false;
+        String lower = s.toLowerCase();
+        // 단일 조회만 허용: select 또는 with(CTE) 로 시작
+        if (!(lower.startsWith("select") || lower.startsWith("with"))) return false;
+        // 세미콜론 전면 차단(구문 이어붙이기 방지)
+        if (s.indexOf(';') >= 0) return false;
+        // 주석 차단(-- , /* */ 로 검사 우회 방지)
+        if (lower.contains("--") || lower.contains("/*")) return false;
+        // 데이터 변경/권한/실행 계열 키워드 단어 차단
+        String[] banned = {"insert", "update", "delete", "drop", "alter", "create", "truncate",
+                "grant", "revoke", "merge", "copy", "call", "do", "vacuum", "analyze",
+                "into", "returning", "pg_sleep", "lo_import", "lo_export", "dblink"};
+        for (String kw : banned) {
+            if (containsWord(lower, kw)) return false;
+        }
+        return true;
+    }
+
+    /** 단어 경계 기준 포함 검사(부분 문자열 오탐 방지: 예 'created_at' 의 'create'). */
+    private boolean containsWord(String haystack, String word) {
+        int from = 0;
+        while (true) {
+            int idx = haystack.indexOf(word, from);
+            if (idx < 0) return false;
+            boolean leftOk = idx == 0 || !isWordChar(haystack.charAt(idx - 1));
+            int end = idx + word.length();
+            boolean rightOk = end >= haystack.length() || !isWordChar(haystack.charAt(end));
+            if (leftOk && rightOk) return true;
+            from = idx + word.length();
+        }
+    }
+
+    private boolean isWordChar(char c) {
+        return Character.isLetterOrDigit(c) || c == '_';
     }
 }

@@ -42,7 +42,7 @@
             <tr>
                 <td><c:out value="${t.hostname}"/></td><td><c:out value="${t.osType}"/></td><td><c:out value="${t.serviceName}"/></td>
                 <td><span class="st ${t.resultStatus=='DONE'?'NORMAL':'NA'}">${t.resultStatus}</span></td>
-                <td><c:if test="${not empty t.overallStatus}"><span class="st ${t.overallStatus}">${t.overallStatus}</span></c:if></td>
+                <td><c:if test="${not empty t.overallStatus}"><span class="st ${fn:escapeXml(t.overallStatus)}"><c:out value="${t.overallStatus}"/></span></c:if></td>
                 <td>${t.doneDt}</td>
                 <td>
                     <form class="inline" method="post" action="<c:url value='/pmc/plan/link.do'/>">

@@ -29,8 +29,10 @@ public class SpoolReplayer {
 
     /**
      * 스풀을 비운다. 전송 성공 건수 반환. 한 건이라도 전송 실패하면 즉시 중단(서버 다운 추정).
+     * 스케줄러·heartbeat 스레드가 동시에 호출할 수 있으므로 synchronized 로 단일 실행 보장
+     * (동일 파일 이중 전송·이중 삭제 race 방지).
      */
-    public int drain() {
+    public synchronized int drain() {
         store.purgeOlderThan(retentionDays);
         List<Path> files = store.listFifo();
         if (files.isEmpty()) return 0;

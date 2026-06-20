@@ -151,8 +151,8 @@ public class AgentServiceImpl implements AgentService {
 
     @Override
     @Transactional
-    public void ackCommand(Long commandId, String status, String resultMsg) {
-        agentMapper.ackCommand(commandId, status, resultMsg);
+    public void ackCommand(String agentId, Long commandId, String status, String resultMsg) {
+        agentMapper.ackCommand(agentId, commandId, status, resultMsg);
     }
 
     /** 아주 단순한 JSON 값 추출(평탄 객체 전제). 의존성 추가 없이 사용. */

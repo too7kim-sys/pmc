@@ -11,6 +11,8 @@ import egovframework.let.pmc.report.generator.ReportGenerator;
 import egovframework.let.pmc.report.service.ReportMapper;
 import egovframework.let.pmc.report.service.ReportService;
 import egovframework.let.pmc.report.service.ReportVO;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -25,6 +27,8 @@ import java.util.Map;
 
 @Service
 public class ReportServiceImpl implements ReportService {
+
+    private static final Logger log = LoggerFactory.getLogger(ReportServiceImpl.class);
 
     private final ReportMapper reportMapper;
     private final IngestService ingestService;
@@ -54,6 +58,28 @@ public class ReportServiceImpl implements ReportService {
     @Override
     public ReportVO getReport(Long reportId) {
         return reportMapper.selectReport(reportId);
+    }
+
+    @Override
+    public File resolveDownloadableFile(Long reportId) {
+        ReportVO vo = reportMapper.selectReport(reportId);
+        if (vo == null || vo.getFilePath() == null) {
+            return null;
+        }
+        try {
+            File base = new File(reportDir).getCanonicalFile();
+            File f = new File(vo.getFilePath()).getCanonicalFile();
+            String basePath = base.getPath() + File.separator;
+            // 정규화된 경로가 보고서 디렉터리 하위인지 확인(../ 등 경로 우회 차단)
+            if (!f.getPath().startsWith(basePath)) {
+                log.warn("보고서 다운로드 경로 우회 차단 reportId={} path={}", reportId, vo.getFilePath());
+                return null;
+            }
+            return f.isFile() ? f : null;
+        } catch (java.io.IOException e) {
+            log.warn("보고서 경로 확인 실패 reportId={}: {}", reportId, e.getMessage());
+            return null;
+        }
     }
 
     @Override
