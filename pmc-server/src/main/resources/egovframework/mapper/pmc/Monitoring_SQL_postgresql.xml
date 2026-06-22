@@ -102,7 +102,7 @@
           FROM pmc_inspection_result_item ri
           JOIN pmc_inspection_run r ON r.run_id = ri.run_id
           JOIN pmc_server s ON s.server_id = r.server_id
-         WHERE ri.item_code IN ('OS_CPU_USAGE','OS_MEM_USAGE','OS_DISK_USAGE')
+         WHERE ri.item_code IN ('OS_CPU_USAGE','OS_MEM_USAGE','OS_DISK_USAGE','OS_SWAP_USAGE','OS_INODE_USAGE')
            AND r.received_at >= now() - make_interval(days => #{days})
          ORDER BY s.hostname
     </select>
@@ -115,7 +115,7 @@
           FROM pmc_inspection_result_item ri
           JOIN pmc_inspection_run r ON r.run_id = ri.run_id
          WHERE r.server_id = #{serverId}
-           AND ri.item_code IN ('OS_CPU_USAGE','OS_MEM_USAGE','OS_DISK_USAGE')
+           AND ri.item_code IN ('OS_CPU_USAGE','OS_MEM_USAGE','OS_DISK_USAGE','OS_SWAP_USAGE','OS_INODE_USAGE')
            AND r.received_at >= now() - make_interval(days => #{days})
          ORDER BY ri.item_code, COALESCE(ri.collected_at, r.received_at)
     </select>

@@ -119,6 +119,8 @@ public class MonitoringServiceImpl implements MonitoringService {
             {"OS_CPU_USAGE", "CPU 사용률"},
             {"OS_MEM_USAGE", "메모리 사용률"},
             {"OS_DISK_USAGE", "디스크 사용률"},
+            {"OS_SWAP_USAGE", "스왑 사용률"},
+            {"OS_INODE_USAGE", "inode 사용률"},
     };
 
     @Override
