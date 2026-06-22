@@ -24,4 +24,8 @@ public interface MonitoringMapper {
     // ③ 실시간 시스템 상태
     List<Map<String, Object>> selectRealtimeServers();
     Map<String, Object> selectCountersToday();
+
+    // ④ 용량점검(CPU/메모리/디스크 추이)
+    List<Map<String, Object>> selectCapacityServers(@Param("days") int days);
+    List<Map<String, Object>> selectCapacitySeries(@Param("serverId") Long serverId, @Param("days") int days);
 }

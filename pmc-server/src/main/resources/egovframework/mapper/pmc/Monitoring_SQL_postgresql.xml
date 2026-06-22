@@ -96,6 +96,30 @@
          ORDER BY s.hostname
     </select>
 
+    <!-- ④ 용량점검: OS 용량 지표 데이터가 있는 서버 목록 -->
+    <select id="selectCapacityServers" resultType="hashmap">
+        SELECT DISTINCT s.server_id AS "serverId", s.hostname AS "hostname"
+          FROM pmc_inspection_result_item ri
+          JOIN pmc_inspection_run r ON r.run_id = ri.run_id
+          JOIN pmc_server s ON s.server_id = r.server_id
+         WHERE ri.item_code IN ('OS_CPU_USAGE','OS_MEM_USAGE','OS_DISK_USAGE')
+           AND r.received_at >= now() - make_interval(days => #{days})
+         ORDER BY s.hostname
+    </select>
+
+    <!-- ④ 용량점검: 특정 서버의 CPU/메모리/디스크 시계열(오름차순) -->
+    <select id="selectCapacitySeries" resultType="hashmap">
+        SELECT ri.item_code AS "itemCode",
+               ri.value AS "value", ri.unit AS "unit", ri.status AS "status",
+               to_char(COALESCE(ri.collected_at, r.received_at), 'MM-DD HH24:MI') AS "ts"
+          FROM pmc_inspection_result_item ri
+          JOIN pmc_inspection_run r ON r.run_id = ri.run_id
+         WHERE r.server_id = #{serverId}
+           AND ri.item_code IN ('OS_CPU_USAGE','OS_MEM_USAGE','OS_DISK_USAGE')
+           AND r.received_at >= now() - make_interval(days => #{days})
+         ORDER BY ri.item_code, COALESCE(ri.collected_at, r.received_at)
+    </select>
+
     <!-- ③ 실시간 카운터(오늘/24h) -->
     <select id="selectCountersToday" resultType="hashmap">
         SELECT

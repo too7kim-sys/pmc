@@ -52,4 +52,20 @@ public class MonitoringController {
         model.addAttribute("snapshot", monitoringService.getRealtimeSnapshot());
         return "egovframework/let/pmc/monitoring/realtimeMonitor";
     }
+
+    /** ④ 용량점검(CPU/메모리/디스크 추이 + 고사용 이상구간) */
+    @GetMapping("/capacity.do")
+    public String capacity(@RequestParam(required = false) Long serverId,
+                           @RequestParam(defaultValue = "7") int days,
+                           @RequestParam(defaultValue = "80") double high,
+                           Model model) {
+        model.addAttribute("days", days);
+        model.addAttribute("high", high);
+        model.addAttribute("servers", monitoringService.getCapacityServers(days));
+        model.addAttribute("serverId", serverId);
+        if (serverId != null) {
+            model.addAttribute("metrics", monitoringService.getCapacity(serverId, days, high));
+        }
+        return "egovframework/let/pmc/monitoring/capacityMonitor";
+    }
 }

@@ -19,4 +19,10 @@ public interface MonitoringService {
 
     /** ③ 실시간 스냅샷: { servers:[...], counters:{...}, ts:"..." } */
     Map<String, Object> getRealtimeSnapshot();
+
+    /** ④ 용량점검 대상 서버 목록(OS 용량 지표 보유) */
+    List<Map<String, Object>> getCapacityServers(int days);
+
+    /** ④ 특정 서버의 CPU/메모리/디스크 추이 + 통계 + 고사용 이상구간. highThreshold(%) 이상 또는 WARN/CRITICAL 을 이상으로 판정 */
+    List<CapacityMetricVO> getCapacity(Long serverId, int days, double highThreshold);
 }
