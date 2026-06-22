@@ -18,4 +18,7 @@ public interface ReportService {
 
     /** 정기점검 계획(plan) 결과보고서 생성 */
     ReportVO generatePlanReport(Long planId, String type);
+
+    /** 문제가능성(위험) 분석 보고서 생성. days = 분석 기간(일) */
+    ReportVO generateRiskReport(int days, String type);
 }

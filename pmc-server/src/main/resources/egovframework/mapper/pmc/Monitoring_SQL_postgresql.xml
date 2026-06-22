@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="egovframework.let.pmc.monitoring.service.MonitoringMapper">
+
+    <!-- ① SVC: 서비스(svcKey)·항목코드별 최신 결과. svcKey = item_name 괄호 안(예 '응답시간(API-GW)'->'API-GW') -->
+    <select id="selectSvcLatest" resultType="hashmap">
+        WITH svc AS (
+          SELECT regexp_replace(ri.item_name, '^[^(]*\(|\)$', '', 'g') AS svc_key,
+                 ri.item_code, ri.value, ri.unit, ri.status, ri.raw_text, ri.error_text,
+                 r.received_at, s.hostname
+            FROM pmc_inspection_result_item ri
+            JOIN pmc_inspection_run r ON r.run_id = ri.run_id
+            LEFT JOIN pmc_server s ON s.server_id = r.server_id
+           WHERE ri.category = 'SVC'
+             AND r.received_at >= now() - make_interval(days => #{days})
+        )
+        SELECT DISTINCT ON (svc_key, item_code)
+               svc_key AS "svcKey", item_code AS "itemCode", value AS "value", unit AS "unit",
+               status AS "status", raw_text AS "rawText", error_text AS "errorText",
+               hostname AS "hostname", to_char(received_at, 'YYYY-MM-DD HH24:MI') AS "receivedAt"
+          FROM svc
+         ORDER BY svc_key, item_code, received_at DESC
+    </select>
+
+    <!-- ① SVC: 서비스별 접속 실패율(SVC_URL_STATUS 기준) -->
+    <select id="selectSvcFailCount" resultType="hashmap">
+        SELECT regexp_replace(ri.item_name, '^[^(]*\(|\)$', '', 'g') AS "svcKey",
+               count(*) AS "total",
+               sum(CASE WHEN ri.status IN ('WARN','CRITICAL','ERROR') THEN 1 ELSE 0 END) AS "fail"
+          FROM pmc_inspection_result_item ri
+          JOIN pmc_inspection_run r ON r.run_id = ri.run_id
+         WHERE ri.category = 'SVC' AND ri.item_code = 'SVC_URL_STATUS'
+           AND r.received_at >= now() - make_interval(days => #{days})
+         GROUP BY 1
+    </select>
+
+    <!-- ① SVC: 정책에 정의된 svc_name -> url (표시용) -->
+    <select id="selectSvcUrlMap" resultType="hashmap">
+        SELECT svc_name AS "svcName", url AS "url" FROM pmc_policy_svc_target WHERE use_yn = 'Y'
+    </select>
+
+    <!-- ② 일자별 점검 집계 -->
+    <select id="selectDailySummary" resultType="hashmap">
+        SELECT to_char(r.received_at, 'YYYY-MM-DD') AS "day",
+               count(*) AS "runCnt",
+               count(DISTINCT r.server_id) AS "serverCnt",
+               sum(CASE WHEN r.overall_status='NORMAL'   THEN 1 ELSE 0 END) AS "normalCnt",
+               sum(CASE WHEN r.overall_status='WARN'     THEN 1 ELSE 0 END) AS "warnCnt",
+               sum(CASE WHEN r.overall_status='CRITICAL' THEN 1 ELSE 0 END) AS "criticalCnt",
+               sum(CASE WHEN r.overall_status='ERROR'    THEN 1 ELSE 0 END) AS "errorCnt",
+               sum(r.warn_count) AS "warnItems", sum(r.critical_count) AS "criticalItems"
+          FROM pmc_inspection_run r
+         WHERE r.received_at >= now() - make_interval(days => #{days})
+         GROUP BY 1
+         ORDER BY 1 DESC
+    </select>
+
+    <!-- ② 특정 일자 run 목록(드릴다운) -->
+    <select id="selectRunsByDate" resultType="hashmap">
+        SELECT CAST(r.run_id AS varchar) AS "runId", s.hostname AS "hostname",
+               r.run_type AS "runType", r.overall_status AS "overallStatus",
+               r.item_count AS "itemCount", r.warn_count AS "warnCount",
+               r.critical_count AS "criticalCount", r.error_count AS "errorCount",
+               to_char(r.received_at, 'HH24:MI:SS') AS "receivedAt"
+          FROM pmc_inspection_run r
+          LEFT JOIN pmc_server s ON s.server_id = r.server_id
+         WHERE r.received_at::date = CAST(#{day} AS date)
+         ORDER BY r.received_at DESC
+    </select>
+
+    <!-- ③ 실시간 스냅샷: 서버별 최신 판정 + agent heartbeat 경과 -->
+    <select id="selectRealtimeServers" resultType="hashmap">
+        WITH latest AS (
+          SELECT DISTINCT ON (r.server_id) r.server_id, r.overall_status, r.received_at
+            FROM pmc_inspection_run r
+           ORDER BY r.server_id, r.received_at DESC
+        ),
+        ag AS (
+          SELECT DISTINCT ON (server_id) server_id, status, last_heartbeat
+            FROM pmc_agent
+           ORDER BY server_id, last_heartbeat DESC NULLS LAST
+        )
+        SELECT s.hostname AS "hostname", s.service_name AS "serviceName",
+               COALESCE(l.overall_status, 'NA') AS "overallStatus",
+               to_char(l.received_at, 'MM-DD HH24:MI') AS "lastRun",
+               COALESCE(ag.status, '-') AS "agentStatus",
+               to_char(ag.last_heartbeat, 'MM-DD HH24:MI') AS "lastHeartbeat",
+               CASE WHEN ag.last_heartbeat IS NULL THEN NULL
+                    ELSE round(EXTRACT(EPOCH FROM (now() - ag.last_heartbeat)) / 60)::int END AS "hbAgeMin"
+          FROM pmc_server s
+          LEFT JOIN latest l ON l.server_id = s.server_id
+          LEFT JOIN ag ON ag.server_id = s.server_id
+         WHERE s.use_yn = 'Y'
+         ORDER BY s.hostname
+    </select>
+
+    <!-- ③ 실시간 카운터(오늘/24h) -->
+    <select id="selectCountersToday" resultType="hashmap">
+        SELECT
+          (SELECT count(*) FROM pmc_inspection_run WHERE received_at::date = now()::date) AS "runToday",
+          (SELECT count(*) FROM pmc_inspection_result_item ri JOIN pmc_inspection_run r ON r.run_id=ri.run_id
+              WHERE ri.status='CRITICAL' AND r.received_at >= now() - interval '1 day') AS "criticalToday",
+          (SELECT count(*) FROM pmc_inspection_result_item ri JOIN pmc_inspection_run r ON r.run_id=ri.run_id
+              WHERE ri.status='WARN' AND r.received_at >= now() - interval '1 day') AS "warnToday"
+    </select>
+
+</mapper>

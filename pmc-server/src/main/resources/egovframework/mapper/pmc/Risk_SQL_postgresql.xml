@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="egovframework.let.pmc.risk.service.RiskMapper">
+
+    <!--
+      서버별 위험 산정 근거(최근 #{days}일):
+        lastOverall = 최신 run 종합판정, c7/w7 = CRITICAL/WARN 항목수, svcFail7 = SVC URL 실패수,
+        hbStale = ACTIVE agent 인데 heartbeat 24h 이상 누락, noRun7 = 7일 내 점검 실행 없음.
+    -->
+    <select id="selectServerRiskFacts" resultType="hashmap">
+        WITH latest AS (
+          SELECT DISTINCT ON (r.server_id) r.server_id, r.overall_status
+            FROM pmc_inspection_run r
+           WHERE r.received_at >= now() - make_interval(days => #{days})
+           ORDER BY r.server_id, r.received_at DESC
+        ),
+        items AS (
+          SELECT r.server_id,
+                 sum(CASE WHEN ri.status='CRITICAL' THEN 1 ELSE 0 END) AS c7,
+                 sum(CASE WHEN ri.status='WARN' THEN 1 ELSE 0 END) AS w7,
+                 sum(CASE WHEN ri.category='SVC' AND ri.item_code='SVC_URL_STATUS'
+                           AND ri.status IN ('WARN','CRITICAL','ERROR') THEN 1 ELSE 0 END) AS svc_fail
+            FROM pmc_inspection_result_item ri
+            JOIN pmc_inspection_run r ON r.run_id = ri.run_id
+           WHERE r.received_at >= now() - make_interval(days => #{days})
+           GROUP BY r.server_id
+        ),
+        ag AS (
+          SELECT DISTINCT ON (server_id) server_id, status, last_heartbeat, last_run_at
+            FROM pmc_agent
+           ORDER BY server_id, last_heartbeat DESC NULLS LAST
+        )
+        SELECT s.server_id AS "serverId", s.hostname AS "hostname", s.service_name AS "serviceName",
+               COALESCE(l.overall_status, 'NA') AS "lastOverall",
+               COALESCE(i.c7, 0) AS "c7", COALESCE(i.w7, 0) AS "w7", COALESCE(i.svc_fail, 0) AS "svcFail7",
+               COALESCE(ag.status, '-') AS "agentStatus",
+               CASE WHEN ag.status='ACTIVE'
+                     AND (ag.last_heartbeat IS NULL OR ag.last_heartbeat < now() - interval '24 hour')
+                    THEN 1 ELSE 0 END AS "hbStale",
+               CASE WHEN ag.last_run_at IS NULL OR ag.last_run_at < now() - interval '7 day'
+                    THEN 1 ELSE 0 END AS "noRun7"
+          FROM pmc_server s
+          LEFT JOIN latest l ON l.server_id = s.server_id
+          LEFT JOIN items i ON i.server_id = s.server_id
+          LEFT JOIN ag ON ag.server_id = s.server_id
+         WHERE s.use_yn = 'Y'
+         ORDER BY s.hostname
+    </select>
+
+</mapper>

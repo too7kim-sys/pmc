@@ -24,6 +24,8 @@
     <a href="<c:url value='/pmc/policy/list.do'/>">점검정책</a>
     <a href="<c:url value='/pmc/plan/list.do'/>">정기점검계획</a>
     <a href="<c:url value='/pmc/inspection/list.do'/>">점검이력</a>
+    <a href="<c:url value='/pmc/monitoring/realtime.do'/>">모니터링</a>
+    <a href="<c:url value='/pmc/risk/list.do'/>">문제가능성</a>
     <a href="<c:url value='/pmc/report/list.do'/>">보고서</a>
     <sec:authorize access="hasRole('ADMIN')">
         <a href="<c:url value='/cmm/cmmnCode/list.do'/>">공통코드</a>

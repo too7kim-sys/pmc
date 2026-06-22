@@ -11,6 +11,8 @@ import egovframework.let.pmc.report.generator.ReportGenerator;
 import egovframework.let.pmc.report.service.ReportMapper;
 import egovframework.let.pmc.report.service.ReportService;
 import egovframework.let.pmc.report.service.ReportVO;
+import egovframework.let.pmc.risk.service.RiskAnalysisService;
+import egovframework.let.pmc.risk.service.RiskScoreVO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +35,7 @@ public class ReportServiceImpl implements ReportService {
     private final ReportMapper reportMapper;
     private final IngestService ingestService;
     private final PlanService planService;
+    private final RiskAnalysisService riskAnalysisService;
     private final Map<String, ReportGenerator> generators;
 
     @Value("${Globals.ReportDir}")
@@ -40,10 +43,12 @@ public class ReportServiceImpl implements ReportService {
 
     @Autowired
     public ReportServiceImpl(ReportMapper reportMapper, IngestService ingestService,
-                             PlanService planService, List<ReportGenerator> generatorList) {
+                             PlanService planService, RiskAnalysisService riskAnalysisService,
+                             List<ReportGenerator> generatorList) {
         this.reportMapper = reportMapper;
         this.ingestService = ingestService;
         this.planService = planService;
+        this.riskAnalysisService = riskAnalysisService;
         this.generators = new java.util.HashMap<>();
         for (ReportGenerator g : generatorList) {
             generators.put(g.type(), g);
@@ -137,6 +142,31 @@ public class ReportServiceImpl implements ReportService {
         }
         return saveAndRecord(data, type, "PLAN", planId, null, null,
                 plan.getPeriodFrom(), plan.getPeriodTo(), "plan-report");
+    }
+
+    @Override
+    public ReportVO generateRiskReport(int days, String type) {
+        List<RiskScoreVO> scores = riskAnalysisService.analyze(days);
+        int high = 0, medium = 0, low = 0;
+        for (RiskScoreVO r : scores) {
+            if ("HIGH".equals(r.getLevel())) high++;
+            else if ("MEDIUM".equals(r.getLevel())) medium++;
+            else if ("LOW".equals(r.getLevel())) low++;
+        }
+        ReportData data = new ReportData("문제 가능성 점검 보고서");
+        data.addHeader("생성일시", java.time.LocalDateTime.now()
+                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
+        data.addHeader("분석기간", "최근 " + days + "일");
+        data.addHeader("대상 서버", String.valueOf(scores.size()));
+        data.addHeader("위험도 분포", "HIGH " + high + " / MEDIUM " + medium + " / LOW " + low);
+
+        ReportData.Section sec = data.addSection("서버별 위험도",
+                "호스트", "서비스", "점수", "위험도", "주요 사유");
+        for (RiskScoreVO r : scores) {
+            sec.addRow(nz(r.getHostname()), nz(r.getServiceName()),
+                    String.valueOf(r.getScore()), nz(r.getLevel()), r.getReasonText());
+        }
+        return saveAndRecord(data, type, "RISK", null, null, null, null, null, "risk-report");
     }
 
     private ReportVO saveAndRecord(ReportData data, String type, String scope, Long planId,
