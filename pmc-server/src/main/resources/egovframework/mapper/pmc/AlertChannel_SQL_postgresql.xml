@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="egovframework.let.pmc.notify.service.AlertChannelMapper">
+
+    <resultMap id="channelMap" type="egovframework.let.pmc.notify.service.AlertChannelVO">
+        <result property="channelId" column="channel_id"/>
+        <result property="name" column="name"/>
+        <result property="channelType" column="channel_type"/>
+        <result property="url" column="url"/>
+        <result property="minSeverity" column="min_severity"/>
+        <result property="alertTypes" column="alert_types"/>
+        <result property="enabled" column="enabled"/>
+        <result property="regUser" column="reg_user"/>
+        <result property="regDt" column="reg_dt"/>
+    </resultMap>
+
+    <select id="selectChannels" resultMap="channelMap">
+        SELECT * FROM pmc_alert_channel ORDER BY channel_id DESC
+    </select>
+
+    <select id="selectEnabledChannels" resultMap="channelMap">
+        SELECT * FROM pmc_alert_channel WHERE enabled='Y' ORDER BY channel_id
+    </select>
+
+    <insert id="insertChannel" parameterType="egovframework.let.pmc.notify.service.AlertChannelVO">
+        INSERT INTO pmc_alert_channel(name, channel_type, url, min_severity, alert_types, enabled, reg_user)
+        VALUES(#{name}, COALESCE(#{channelType},'WEBHOOK'), #{url},
+               COALESCE(#{minSeverity},'CRITICAL'),
+               <choose><when test="alertTypes != null and alertTypes != ''">#{alertTypes}</when><otherwise>NULL</otherwise></choose>,
+               COALESCE(#{enabled},'Y'), #{regUser})
+    </insert>
+
+    <update id="updateEnabled">
+        UPDATE pmc_alert_channel SET enabled=#{enabled} WHERE channel_id=#{channelId}
+    </update>
+
+    <delete id="deleteChannel">
+        DELETE FROM pmc_alert_channel WHERE channel_id=#{channelId}
+    </delete>
+
+</mapper>

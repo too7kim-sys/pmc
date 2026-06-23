@@ -65,8 +65,30 @@ public class PdfReportGenerator implements ReportGenerator {
         }
     }
 
-    /** 한글 폰트 확보: 시스템 TTF → CJK 내장 → (최후) Helvetica */
-    private BaseFont koreanBaseFont() {
+    /**
+     * 한글 폰트 확보: classpath 동봉 TTF(권장) → 시스템 TTF → CJK 내장 → (최후) Helvetica.
+     * 운영 한글 PDF 보장을 위해 {@code resources/fonts/NanumGothic.ttf} 동봉을 권장한다.
+     * (package-private: 폰트 확보 실측 테스트용)
+     */
+    BaseFont koreanBaseFont() {
+        // 1) classpath 동봉 TTF — 호스트 폰트와 무관하게 임베딩 보장
+        try {
+            java.io.InputStream in = getClass().getClassLoader().getResourceAsStream("fonts/NanumGothic.ttf");
+            if (in != null) {
+                byte[] ttf;
+                try (java.io.InputStream is = in; java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream()) {
+                    byte[] buf = new byte[8192];
+                    int n;
+                    while ((n = is.read(buf)) != -1) bos.write(buf, 0, n);
+                    ttf = bos.toByteArray();
+                }
+                return BaseFont.createFont("NanumGothic.ttf", BaseFont.IDENTITY_H, BaseFont.EMBEDDED,
+                        true, ttf, null);
+            }
+        } catch (Exception ignore) {
+            // 다음 후보
+        }
+        // 2) 시스템 설치 TTF
         String[] candidates = {
             "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
             "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
@@ -81,10 +103,11 @@ public class PdfReportGenerator implements ReportGenerator {
                 // 다음 후보
             }
         }
+        // 3) OpenPDF 내장 CJK (한국어)
         try {
-            // OpenPDF 내장 CJK (한국어)
             return BaseFont.createFont("HYSMyeongJo-Medium", "UniKS-UCS2-H", BaseFont.NOT_EMBEDDED);
         } catch (Exception ignore) {
+            // 4) 최후: 라틴 전용(한글 불가) — 테스트가 이 폴백을 감지한다
             try {
                 return BaseFont.createFont(BaseFont.HELVETICA, BaseFont.CP1252, BaseFont.NOT_EMBEDDED);
             } catch (Exception e) {

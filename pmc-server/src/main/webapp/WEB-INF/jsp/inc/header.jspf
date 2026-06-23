@@ -31,6 +31,7 @@
         <a href="<c:url value='/cmm/cmmnCode/list.do'/>">공통코드</a>
         <a href="<c:url value='/pmc/admin/user.do'/>">사용자</a>
         <a href="<c:url value='/pmc/admin/dq.do'/>">데이터품질</a>
+        <a href="<c:url value='/pmc/admin/alertChannel.do'/>">알림채널</a>
     </sec:authorize>
 </nav>
 <main>

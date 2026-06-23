@@ -2,6 +2,8 @@ package egovframework.let.pmc.notify.service.impl;
 
 import egovframework.let.pmc.ingest.service.InspectionRunVO;
 import egovframework.let.pmc.notify.WebhookSender;
+import egovframework.let.pmc.notify.service.AlertChannelMapper;
+import egovframework.let.pmc.notify.service.AlertChannelVO;
 import egovframework.let.pmc.notify.service.AlertLogVO;
 import egovframework.let.pmc.notify.service.AlertMapper;
 import egovframework.let.pmc.notify.service.AlertService;
@@ -20,6 +22,7 @@ public class AlertServiceImpl implements AlertService {
     private static final Logger log = LoggerFactory.getLogger(AlertServiceImpl.class);
 
     private final AlertMapper alertMapper;
+    private final AlertChannelMapper alertChannelMapper;
     private final WebhookSender webhookSender;
 
     @Value("${Globals.AlertEnabled:false}")
@@ -30,8 +33,10 @@ public class AlertServiceImpl implements AlertService {
     private int dedupeMin;
 
     @Autowired
-    public AlertServiceImpl(AlertMapper alertMapper, WebhookSender webhookSender) {
+    public AlertServiceImpl(AlertMapper alertMapper, AlertChannelMapper alertChannelMapper,
+                            WebhookSender webhookSender) {
         this.alertMapper = alertMapper;
+        this.alertChannelMapper = alertChannelMapper;
         this.webhookSender = webhookSender;
     }
 
@@ -82,7 +87,15 @@ public class AlertServiceImpl implements AlertService {
         if (alertMapper.countRecent(alertType, serverId, dedupeMin) > 0) {
             return;
         }
-        boolean ok = webhookSender.send(webhookUrl, title + "\n" + message);
+        // 매칭 채널(심각도 임계·유형 필터) 전부 발송. 채널이 없으면 globals webhook 폴백(하위호환).
+        List<String> targets = resolveTargetUrls(alertType, severity);
+        boolean anySent = false;
+        boolean attempted = false;
+        for (String url : targets) {
+            attempted = true;
+            if (webhookSender.send(url, title + "\n" + message)) anySent = true;
+        }
+        String sentStatus = !attempted ? "SKIPPED" : (anySent ? "SENT" : "FAILED");
         AlertLogVO vo = new AlertLogVO();
         vo.setAlertType(alertType);
         vo.setServerId(serverId);
@@ -91,12 +104,68 @@ public class AlertServiceImpl implements AlertService {
         vo.setTitle(title);
         vo.setMessage(message);
         vo.setChannel("WEBHOOK");
-        vo.setSentStatus(ok ? "SENT" : "FAILED");
+        vo.setSentStatus(sentStatus);
         alertMapper.insertAlert(vo);
+    }
+
+    /** 알림 severity·type 에 매칭되는 채널 URL 목록. 채널 미구성 시 globals 단일 URL 폴백. */
+    private List<String> resolveTargetUrls(String alertType, String severity) {
+        List<String> urls = new java.util.ArrayList<>();
+        List<AlertChannelVO> channels = alertChannelMapper.selectEnabledChannels();
+        if (channels != null && !channels.isEmpty()) {
+            int sev = severityRank(severity);
+            for (AlertChannelVO ch : channels) {
+                if (ch.getUrl() == null || ch.getUrl().trim().isEmpty()) continue;
+                if (sev < severityRank(ch.getMinSeverity())) continue;        // 임계 미달
+                if (!typeMatches(ch.getAlertTypes(), alertType)) continue;     // 유형 필터
+                urls.add(ch.getUrl().trim());
+            }
+            return urls;
+        }
+        // 폴백: globals 단일 webhook
+        if (webhookUrl != null && !webhookUrl.trim().isEmpty()) {
+            urls.add(webhookUrl.trim());
+        }
+        return urls;
+    }
+
+    private int severityRank(String s) {
+        if ("CRITICAL".equals(s) || "ERROR".equals(s)) return 2;
+        if ("WARN".equals(s)) return 1;
+        return 0; // INFO/NORMAL/NA
+    }
+
+    /** alertTypes 가 비면 전체 허용, CSV 면 포함 여부. */
+    private boolean typeMatches(String alertTypes, String alertType) {
+        if (alertTypes == null || alertTypes.trim().isEmpty()) return true;
+        for (String t : alertTypes.split(",")) {
+            if (t.trim().equalsIgnoreCase(alertType)) return true;
+        }
+        return false;
     }
 
     @Override
     public List<AlertLogVO> getAlertLog(int limit) {
         return alertMapper.selectAlertLog(limit);
+    }
+
+    @Override
+    public List<AlertChannelVO> getChannels() {
+        return alertChannelMapper.selectChannels();
+    }
+
+    @Override
+    public void addChannel(AlertChannelVO vo) {
+        alertChannelMapper.insertChannel(vo);
+    }
+
+    @Override
+    public void setChannelEnabled(Long channelId, String enabled) {
+        alertChannelMapper.updateEnabled(channelId, "Y".equals(enabled) ? "Y" : "N");
+    }
+
+    @Override
+    public void deleteChannel(Long channelId) {
+        alertChannelMapper.deleteChannel(channelId);
     }
 }
