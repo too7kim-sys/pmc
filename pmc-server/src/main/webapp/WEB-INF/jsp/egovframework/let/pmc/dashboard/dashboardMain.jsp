@@ -10,6 +10,45 @@
 </div>
 
 <div class="card">
+    <h3>최근 14일 점검 판정 추이</h3>
+    <c:set var="maxRun" value="1"/>
+    <c:forEach var="d" items="${dailyTrend}"><c:if test="${d.runCnt > maxRun}"><c:set var="maxRun" value="${d.runCnt}"/></c:if></c:forEach>
+    <c:set var="n" value="${fn:length(dailyTrend)}"/>
+    <c:choose>
+        <c:when test="${n == 0}"><p class="muted">최근 점검 데이터가 없습니다.</p></c:when>
+        <c:otherwise>
+            <%-- 일자별 누적 막대(정상=녹/주의=주황/위험=빨강/오류=암적), 높이는 일 최대 run 기준 정규화 --%>
+            <svg width="100%" viewBox="0 0 700 160" preserveAspectRatio="none"
+                 style="background:#fafbfd; border:1px solid #e0e4ea; border-radius:4px;">
+                <line x1="0" y1="140" x2="700" y2="140" stroke="#dde2e8"/>
+                <c:set var="bw" value="${700 / n}"/>
+                <c:forEach var="d" items="${dailyTrend}" varStatus="st">
+                    <c:set var="x" value="${st.index * bw + bw*0.15}"/>
+                    <c:set var="w" value="${bw*0.7}"/>
+                    <c:set var="hCrit" value="${d.criticalCnt * 130 / maxRun}"/>
+                    <c:set var="hErr"  value="${d.errorCnt * 130 / maxRun}"/>
+                    <c:set var="hWarn" value="${d.warnCnt * 130 / maxRun}"/>
+                    <c:set var="hNorm" value="${d.normalCnt * 130 / maxRun}"/>
+                    <c:set var="y0" value="140"/>
+                    <rect x="${x}" y="${y0 - hNorm}" width="${w}" height="${hNorm}" fill="#2e7d32"/>
+                    <rect x="${x}" y="${y0 - hNorm - hWarn}" width="${w}" height="${hWarn}" fill="#f39c12"/>
+                    <rect x="${x}" y="${y0 - hNorm - hWarn - hCrit}" width="${w}" height="${hCrit}" fill="#c0392b"/>
+                    <rect x="${x}" y="${y0 - hNorm - hWarn - hCrit - hErr}" width="${w}" height="${hErr}" fill="#6b2737"/>
+                    <text x="${x + w/2}" y="152" font-size="8" fill="#888" text-anchor="middle">${d.day}</text>
+                </c:forEach>
+            </svg>
+            <p class="muted">
+                <span class="st NORMAL">정상</span>
+                <span class="st WARN">주의</span>
+                <span class="st CRITICAL">위험</span>
+                <span class="st ERROR">오류</span>
+                · 막대 높이 = 일자별 점검 실행 수(최대 ${maxRun}건 기준)
+            </p>
+        </c:otherwise>
+    </c:choose>
+</div>
+
+<div class="card">
     <h3>정기점검 이행률</h3>
     <c:set var="rate" value="${planCompliance.targetCnt > 0 ? (planCompliance.doneCnt*100/planCompliance.targetCnt) : 0}"/>
     <div class="bar"><span style="width:${rate}%">${rate}%</span></div>

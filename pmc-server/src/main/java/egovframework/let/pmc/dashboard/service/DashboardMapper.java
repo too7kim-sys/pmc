@@ -14,4 +14,5 @@ public interface DashboardMapper {
     List<Map<String, Object>> selectSvcAvailability();    // SVC 항목 상태
     Map<String, Object> selectPlanCompliance();           // 정기점검 이행률
     Map<String, Object> selectDqSummary();                // 데이터품질
+    List<Map<String, Object>> selectDailyTrend();         // 최근 14일 일자별 판정 추이
 }

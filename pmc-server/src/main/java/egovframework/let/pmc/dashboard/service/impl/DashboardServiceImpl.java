@@ -28,6 +28,7 @@ public class DashboardServiceImpl implements DashboardService {
         m.put("svcAvailability", dashboardMapper.selectSvcAvailability());
         m.put("planCompliance", dashboardMapper.selectPlanCompliance());
         m.put("dqSummary", dashboardMapper.selectDqSummary());
+        m.put("dailyTrend", dashboardMapper.selectDailyTrend());
         return m;
     }
 }

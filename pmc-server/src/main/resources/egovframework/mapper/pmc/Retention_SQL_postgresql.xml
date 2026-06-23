@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="egovframework.let.pmc.retention.RetentionMapper">
+
+    <!-- 계획(plan) 연계 run 은 감사 목적으로 보존, 그 외 오래된 run 삭제(결과항목 FK CASCADE) -->
+    <delete id="deleteRunsBefore">
+        DELETE FROM pmc_inspection_run
+         WHERE received_at &lt; now() - make_interval(days => #{days})
+           AND plan_id IS NULL
+           AND run_id NOT IN (SELECT run_id FROM pmc_inspection_plan_target WHERE run_id IS NOT NULL)
+    </delete>
+
+    <select id="selectOldReportPaths" resultType="string">
+        SELECT file_path FROM pmc_report
+         WHERE reg_dt &lt; now() - make_interval(days => #{days}) AND file_path IS NOT NULL
+    </select>
+
+    <delete id="deleteReportsBefore">
+        DELETE FROM pmc_report WHERE reg_dt &lt; now() - make_interval(days => #{days})
+    </delete>
+
+    <delete id="deleteAlertsBefore">
+        DELETE FROM pmc_alert_log WHERE created_at &lt; now() - make_interval(days => #{days})
+    </delete>
+
+</mapper>

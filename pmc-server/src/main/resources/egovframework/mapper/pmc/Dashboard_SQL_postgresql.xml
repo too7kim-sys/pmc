@@ -67,4 +67,18 @@
              AND checked_at >= now() - interval '1 day') AS "failCnt"
     </select>
 
+    <!-- 최근 14일 일자별 판정 추이(오름차순) -->
+    <select id="selectDailyTrend" resultType="hashmap">
+        SELECT to_char(r.received_at, 'MM-DD') AS "day",
+               count(*) AS "runCnt",
+               sum(CASE WHEN r.overall_status='NORMAL'   THEN 1 ELSE 0 END) AS "normalCnt",
+               sum(CASE WHEN r.overall_status='WARN'     THEN 1 ELSE 0 END) AS "warnCnt",
+               sum(CASE WHEN r.overall_status='CRITICAL' THEN 1 ELSE 0 END) AS "criticalCnt",
+               sum(CASE WHEN r.overall_status='ERROR'    THEN 1 ELSE 0 END) AS "errorCnt"
+          FROM pmc_inspection_run r
+         WHERE r.received_at >= now() - interval '14 day'
+         GROUP BY 1
+         ORDER BY 1
+    </select>
+
 </mapper>
