@@ -37,9 +37,9 @@
                COALESCE(i.c7, 0) AS "c7", COALESCE(i.w7, 0) AS "w7", COALESCE(i.svc_fail, 0) AS "svcFail7",
                COALESCE(ag.status, '-') AS "agentStatus",
                CASE WHEN ag.status='ACTIVE'
-                     AND (ag.last_heartbeat IS NULL OR ag.last_heartbeat < now() - interval '24 hour')
+                     AND (ag.last_heartbeat IS NULL OR ag.last_heartbeat &lt; now() - interval '24 hour')
                     THEN 1 ELSE 0 END AS "hbStale",
-               CASE WHEN ag.last_run_at IS NULL OR ag.last_run_at < now() - interval '7 day'
+               CASE WHEN ag.last_run_at IS NULL OR ag.last_run_at &lt; now() - interval '7 day'
                     THEN 1 ELSE 0 END AS "noRun7"
           FROM pmc_server s
           LEFT JOIN latest l ON l.server_id = s.server_id

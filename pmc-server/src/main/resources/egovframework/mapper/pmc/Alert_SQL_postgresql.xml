@@ -28,7 +28,7 @@
           FROM pmc_agent a
           JOIN pmc_server s ON s.server_id = a.server_id
          WHERE a.status = 'ACTIVE'
-           AND (a.last_heartbeat IS NULL OR a.last_heartbeat < now() - make_interval(hours => #{hours}))
+           AND (a.last_heartbeat IS NULL OR a.last_heartbeat &lt; now() - make_interval(hours => #{hours}))
          ORDER BY s.server_id, a.last_heartbeat DESC NULLS LAST
     </select>
 
