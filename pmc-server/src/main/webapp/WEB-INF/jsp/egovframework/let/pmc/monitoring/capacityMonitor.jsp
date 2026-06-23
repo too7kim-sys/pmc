@@ -6,6 +6,7 @@
     <a class="btn gray" href="<c:url value='/pmc/monitoring/svc.do'/>">웹서비스(URL)</a>
     <a class="btn gray" href="<c:url value='/pmc/monitoring/daily.do'/>">일자별 점검</a>
     <a class="btn" href="<c:url value='/pmc/monitoring/capacity.do'/>">용량점검</a>
+    <a class="btn gray" href="<c:url value='/pmc/alert/list.do'/>">알림이력</a>
 </div>
 
 <div class="card">

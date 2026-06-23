@@ -4,6 +4,7 @@ import egovframework.let.pmc.agent.service.AgentMapper;
 import egovframework.let.pmc.agent.service.AgentVO;
 import egovframework.let.pmc.common.ApiException;
 import egovframework.let.pmc.ingest.service.*;
+import egovframework.let.pmc.notify.service.AlertService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,11 +23,14 @@ public class IngestServiceImpl implements IngestService {
 
     private final InspectionMapper inspectionMapper;
     private final AgentMapper agentMapper;
+    private final AlertService alertService;
 
     @Autowired
-    public IngestServiceImpl(InspectionMapper inspectionMapper, AgentMapper agentMapper) {
+    public IngestServiceImpl(InspectionMapper inspectionMapper, AgentMapper agentMapper,
+                             AlertService alertService) {
         this.inspectionMapper = inspectionMapper;
         this.agentMapper = agentMapper;
+        this.alertService = alertService;
     }
 
     @Override
@@ -75,7 +79,7 @@ public class IngestServiceImpl implements IngestService {
         run.setFinishedAt(parse(r.finishedAt));
         run.setSourceIp(sourceIp);
 
-        int warn = 0, crit = 0, err = 0;
+        int warn = 0, crit = 0, err = 0, svcFail = 0;
         List<ResultItemVO> items = new ArrayList<>();
         if (r.items != null) {
             for (IncomingResult.IncomingItem it : r.items) {
@@ -97,6 +101,11 @@ public class IngestServiceImpl implements IngestService {
                 if ("WARN".equals(vo.getStatus())) warn++;
                 else if ("CRITICAL".equals(vo.getStatus())) crit++;
                 else if ("ERROR".equals(vo.getStatus())) err++;
+                if ("SVC".equalsIgnoreCase(vo.getCategory()) && "SVC_URL_STATUS".equals(vo.getItemCode())
+                        && ("WARN".equals(vo.getStatus()) || "CRITICAL".equals(vo.getStatus())
+                            || "ERROR".equals(vo.getStatus()))) {
+                    svcFail++;
+                }
             }
         }
         run.setItemCount(items.size());
@@ -122,6 +131,13 @@ public class IngestServiceImpl implements IngestService {
         // 정기점검 계획 연계
         if (r.planId != null && serverId != null) {
             inspectionMapper.linkPlanTarget(r.planId, serverId, r.runId);
+        }
+
+        // 이상 알림(Webhook) — 비활성/중복억제는 AlertService 가 처리, ingest 실패에 영향 없음
+        try {
+            alertService.raiseRunAlert(run, svcFail);
+        } catch (Exception ignore) {
+            // 알림 실패는 수신 처리에 영향 주지 않음
         }
 
         data.put("duplicated", false);

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="egovframework.let.pmc.notify.service.AlertMapper">
+
+    <insert id="insertAlert" parameterType="egovframework.let.pmc.notify.service.AlertLogVO"
+            useGeneratedKeys="true" keyProperty="alertId" keyColumn="alert_id">
+        INSERT INTO pmc_alert_log(alert_type, server_id, ref_id, severity, title, message, channel, sent_status)
+        VALUES(#{alertType}, #{serverId}, #{refId}, #{severity}, #{title}, #{message},
+               COALESCE(#{channel},'WEBHOOK'), COALESCE(#{sentStatus},'SENT'))
+    </insert>
+
+    <select id="countRecent" resultType="int">
+        SELECT count(*) FROM pmc_alert_log
+         WHERE alert_type = #{alertType}
+           AND created_at >= now() - make_interval(mins => #{min})
+        <choose>
+            <when test="serverId != null"> AND server_id = #{serverId} </when>
+            <otherwise> AND server_id IS NULL </otherwise>
+        </choose>
+    </select>
+
+    <select id="selectStaleHeartbeats" resultType="hashmap">
+        SELECT DISTINCT ON (s.server_id)
+               s.server_id AS "serverId", s.hostname AS "hostname",
+               to_char(a.last_heartbeat, 'YYYY-MM-DD HH24:MI') AS "lastHeartbeat"
+          FROM pmc_agent a
+          JOIN pmc_server s ON s.server_id = a.server_id
+         WHERE a.status = 'ACTIVE'
+           AND (a.last_heartbeat IS NULL OR a.last_heartbeat < now() - make_interval(hours => #{hours}))
+         ORDER BY s.server_id, a.last_heartbeat DESC NULLS LAST
+    </select>
+
+    <resultMap id="alertMap" type="egovframework.let.pmc.notify.service.AlertLogVO">
+        <result property="alertId" column="alert_id"/>
+        <result property="alertType" column="alert_type"/>
+        <result property="serverId" column="server_id"/>
+        <result property="refId" column="ref_id"/>
+        <result property="severity" column="severity"/>
+        <result property="title" column="title"/>
+        <result property="message" column="message"/>
+        <result property="channel" column="channel"/>
+        <result property="sentStatus" column="sent_status"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <select id="selectAlertLog" resultMap="alertMap">
+        SELECT * FROM pmc_alert_log ORDER BY alert_id DESC LIMIT #{limit}
+    </select>
+
+</mapper>
