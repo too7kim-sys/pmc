@@ -168,4 +168,38 @@ public class AlertServiceImpl implements AlertService {
     public void deleteChannel(Long channelId) {
         alertChannelMapper.deleteChannel(channelId);
     }
+
+    @Override
+    public boolean testChannel(Long channelId) {
+        String url = null;
+        for (AlertChannelVO c : alertChannelMapper.selectChannels()) {
+            if (c.getChannelId() != null && c.getChannelId().equals(channelId)) {
+                url = c.getUrl();
+                break;
+            }
+        }
+        return testSend(url, "채널 #" + channelId);
+    }
+
+    @Override
+    public boolean testGlobalWebhook() {
+        return testSend(webhookUrl, "globals 폴백 URL");
+    }
+
+    /** 테스트 발송: 활성/중복억제와 무관하게 즉시 발송하고 TEST 이력으로 기록. */
+    private boolean testSend(String url, String target) {
+        boolean ok = false;
+        if (url != null && !url.trim().isEmpty()) {
+            ok = webhookSender.send(url.trim(), "[PMC 테스트] 알림 연결 테스트 — " + target);
+        }
+        AlertLogVO vo = new AlertLogVO();
+        vo.setAlertType("TEST");
+        vo.setSeverity("INFO");
+        vo.setTitle("[테스트] " + target);
+        vo.setMessage("알림 연결 테스트 발송");
+        vo.setChannel("WEBHOOK");
+        vo.setSentStatus(url == null || url.trim().isEmpty() ? "SKIPPED" : (ok ? "SENT" : "FAILED"));
+        alertMapper.insertAlert(vo);
+        return ok;
+    }
 }

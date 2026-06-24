@@ -48,4 +48,19 @@ public class AlertChannelController {
         alertService.deleteChannel(channelId);
         return "redirect:/pmc/admin/alertChannel.do";
     }
+
+    @PostMapping("/test.do")
+    public String test(@RequestParam Long channelId,
+                       org.springframework.web.servlet.mvc.support.RedirectAttributes ra) {
+        boolean ok = alertService.testChannel(channelId);
+        ra.addFlashAttribute("msg", "채널 #" + channelId + " 테스트 발송 " + (ok ? "성공" : "실패(설정·URL 확인)"));
+        return "redirect:/pmc/admin/alertChannel.do";
+    }
+
+    @PostMapping("/testGlobal.do")
+    public String testGlobal(org.springframework.web.servlet.mvc.support.RedirectAttributes ra) {
+        boolean ok = alertService.testGlobalWebhook();
+        ra.addFlashAttribute("msg", "globals 폴백 URL 테스트 발송 " + (ok ? "성공" : "실패(URL 미설정·연결 확인)"));
+        return "redirect:/pmc/admin/alertChannel.do";
+    }
 }

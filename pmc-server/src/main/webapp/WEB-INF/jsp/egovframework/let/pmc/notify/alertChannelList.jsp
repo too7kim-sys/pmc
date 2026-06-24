@@ -3,7 +3,12 @@
 
 <div class="card">
     <a class="btn gray" href="<c:url value='/pmc/alert/list.do'/>">알림이력</a>
-    <span class="muted">마스터 스위치는 globals.properties 의 Globals.AlertEnabled 입니다. 채널이 없으면 Globals.AlertWebhookUrl 로 폴백합니다.</span>
+    <form class="inline" method="post" action="<c:url value='/pmc/admin/alertChannel/testGlobal.do'/>">
+        <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+        <button class="btn gray">폴백 URL 테스트</button>
+    </form>
+    <c:if test="${not empty msg}"><span class="st NORMAL" style="margin-left:8px;"><c:out value="${msg}"/></span></c:if>
+    <p class="muted">마스터 스위치는 globals.properties 의 Globals.AlertEnabled 입니다. 채널이 없으면 Globals.AlertWebhookUrl 로 폴백합니다.</p>
 </div>
 
 <div class="card">
@@ -35,6 +40,11 @@
                 <td><c:out value="${empty c.alertTypes ? '전체' : c.alertTypes}"/></td>
                 <td><span class="st ${c.enabled == 'Y' ? 'NORMAL' : 'NA'}">${c.enabled == 'Y' ? '사용' : '중지'}</span></td>
                 <td>
+                    <form class="inline" method="post" action="<c:url value='/pmc/admin/alertChannel/test.do'/>">
+                        <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                        <input type="hidden" name="channelId" value="${c.channelId}"/>
+                        <button class="btn">테스트</button>
+                    </form>
                     <form class="inline" method="post" action="<c:url value='/pmc/admin/alertChannel/toggle.do'/>">
                         <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
                         <input type="hidden" name="channelId" value="${c.channelId}"/>

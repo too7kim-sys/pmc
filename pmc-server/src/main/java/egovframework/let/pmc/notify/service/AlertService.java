@@ -27,4 +27,10 @@ public interface AlertService {
     void addChannel(AlertChannelVO vo);
     void setChannelEnabled(Long channelId, String enabled);
     void deleteChannel(Long channelId);
+
+    /** 지정 채널로 테스트 메시지 발송(이력 기록). 성공 여부 반환. */
+    boolean testChannel(Long channelId);
+
+    /** globals 폴백 Webhook URL 로 테스트 메시지 발송. 성공 여부 반환. */
+    boolean testGlobalWebhook();
 }

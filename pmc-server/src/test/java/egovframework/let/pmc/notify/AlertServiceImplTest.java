@@ -126,4 +126,27 @@ class AlertServiceImplTest {
         assertEquals(1, sentUrls.size());
         assertEquals("http://fallback", sentUrls.get(0));
     }
+
+    @Test
+    void testChannelSendsRegardlessOfEnabled() throws Exception {
+        AlertChannelVO c = channel("http://ch9", "CRITICAL", null);
+        c.setChannelId(9L);
+        enabledChannels = Collections.singletonList(c);
+        AlertServiceImpl svc = service(false, ""); // 마스터 비활성이어도 테스트 발송은 동작
+        boolean ok = svc.testChannel(9L);
+        assertTrue(ok);
+        assertEquals(1, sentUrls.size());
+        assertEquals("http://ch9", sentUrls.get(0));
+        assertEquals("TEST", inserted.get(0).getAlertType());
+        assertEquals("SENT", inserted.get(0).getSentStatus());
+    }
+
+    @Test
+    void testGlobalSkippedWhenNoUrl() throws Exception {
+        AlertServiceImpl svc = service(false, "");
+        boolean ok = svc.testGlobalWebhook();
+        assertTrue(!ok);
+        assertTrue(sentUrls.isEmpty());
+        assertEquals("SKIPPED", inserted.get(0).getSentStatus());
+    }
 }
