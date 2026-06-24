@@ -66,6 +66,9 @@
         <dependency><groupId>org.springframework</groupId><artifactId>spring-test</artifactId><version>${spring.version}</version><scope>test</scope></dependency>
         <dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter</artifactId><version>5.10.2</version><scope>test</scope></dependency>
         <dependency><groupId>com.h2database</groupId><artifactId>h2</artifactId><version>2.2.224</version><scope>test</scope></dependency>
+        <!-- 통합테스트: 실 PostgreSQL(Docker 가용 시에만 실행, 미가용 시 자동 skip) -->
+        <dependency><groupId>org.testcontainers</groupId><artifactId>postgresql</artifactId><version>1.19.8</version><scope>test</scope></dependency>
+        <dependency><groupId>org.testcontainers</groupId><artifactId>junit-jupiter</artifactId><version>1.19.8</version><scope>test</scope></dependency>
     </dependencies>
 
     <build>
