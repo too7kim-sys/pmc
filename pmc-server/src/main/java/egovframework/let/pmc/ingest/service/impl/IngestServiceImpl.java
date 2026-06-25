@@ -5,6 +5,8 @@ import egovframework.let.pmc.agent.service.AgentVO;
 import egovframework.let.pmc.common.ApiException;
 import egovframework.let.pmc.ingest.service.*;
 import egovframework.let.pmc.notify.service.AlertService;
+import egovframework.let.pmc.vuln.service.VulnFinding;
+import egovframework.let.pmc.vuln.service.VulnService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,13 +26,15 @@ public class IngestServiceImpl implements IngestService {
     private final InspectionMapper inspectionMapper;
     private final AgentMapper agentMapper;
     private final AlertService alertService;
+    private final VulnService vulnService;
 
     @Autowired
     public IngestServiceImpl(InspectionMapper inspectionMapper, AgentMapper agentMapper,
-                             AlertService alertService) {
+                             AlertService alertService, VulnService vulnService) {
         this.inspectionMapper = inspectionMapper;
         this.agentMapper = agentMapper;
         this.alertService = alertService;
+        this.vulnService = vulnService;
     }
 
     @Override
@@ -133,6 +137,30 @@ public class IngestServiceImpl implements IngestService {
             inspectionMapper.linkPlanTarget(r.planId, serverId, r.runId);
         }
 
+        // 취약점(SEC) 진단 결과 → 동일 취약점 추적/재발방지(비차단: 실패해도 수신 처리에 영향 없음)
+        if (serverId != null) {
+            try {
+                List<VulnFinding> findings = new ArrayList<>();
+                for (ResultItemVO vo : items) {
+                    if (!"SEC".equalsIgnoreCase(vo.getCategory())) continue;
+                    String st = vo.getStatus();
+                    if (!"WARN".equals(st) && !"CRITICAL".equals(st)) continue; // 취약만 finding
+                    findings.add(new VulnFinding(serverId, vo.getItemCode(), "BUILTIN", "SEC",
+                            vo.getItemName(), parseSeverity(vo.getRawText(), st)));
+                }
+                // 이번 run 에 SEC 항목이 하나라도 있으면 전체 스캔으로 보고 부재 항목 자동 FIXED
+                boolean hasSec = false;
+                for (ResultItemVO vo : items) {
+                    if ("SEC".equalsIgnoreCase(vo.getCategory())) { hasSec = true; break; }
+                }
+                if (hasSec) {
+                    vulnService.processFindings(serverId, r.runId, "BUILTIN", findings, true);
+                }
+            } catch (Exception ignore) {
+                // 취약점 추적 실패는 수신 처리에 영향 주지 않음
+            }
+        }
+
         // 이상 알림(Webhook) — 비활성/중복억제는 AlertService 가 처리, ingest 실패에 영향 없음
         try {
             alertService.raiseRunAlert(run, svcFail);
@@ -185,6 +213,15 @@ public class IngestServiceImpl implements IngestService {
         if (run.getPlanId() != null && run.getServerId() != null) {
             inspectionMapper.linkPlanTarget(run.getPlanId(), run.getServerId(), run.getRunId());
         }
+    }
+
+    /** SEC 항목 raw 의 "SEV=상; ..." 토큰에서 등급 추출. 없으면 판정값으로 추정(CRITICAL→상, WARN→중). */
+    private String parseSeverity(String raw, String status) {
+        if (raw != null) {
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("SEV=([상중하])").matcher(raw);
+            if (m.find()) return m.group(1);
+        }
+        return "CRITICAL".equals(status) ? "상" : "중";
     }
 
     private String worstOf(int err, int crit, int warn) {

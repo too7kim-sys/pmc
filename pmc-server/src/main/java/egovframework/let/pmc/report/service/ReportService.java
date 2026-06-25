@@ -21,4 +21,7 @@ public interface ReportService {
 
     /** 문제가능성(위험) 분석 보고서 생성. days = 분석 기간(일) */
     ReportVO generateRiskReport(int days, String type);
+
+    /** 취약점 진단 현황 보고서 생성(OPEN/RECURRED 취약점 + 등급별). */
+    ReportVO generateVulnReport(String type);
 }

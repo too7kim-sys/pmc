@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="egovframework.let.pmc.vuln.service.VulnMapper">
+
+    <!-- ===== finding 추적(상태머신) ===== -->
+
+    <select id="selectFinding" resultType="egovframework.let.pmc.vuln.service.VulnFindingVO">
+        SELECT f.*, CAST(f.last_run_id AS varchar) AS last_run_id
+          FROM pmc_vuln_finding f
+         WHERE f.server_id = #{serverId}
+           AND f.check_code = #{checkCode}
+           AND f.source = #{source}
+    </select>
+
+    <insert id="insertFinding" parameterType="egovframework.let.pmc.vuln.service.VulnFindingVO"
+            useGeneratedKeys="true" keyProperty="findingId" keyColumn="finding_id">
+        INSERT INTO pmc_vuln_finding(server_id, check_code, source, category, title, severity,
+                                     status, occurrence_count, recur_count, last_run_id, reg_user)
+        VALUES(#{serverId}, #{checkCode}, #{source}, COALESCE(#{category},'SEC'), #{title}, #{severity},
+               COALESCE(#{status},'OPEN'), 1, 0, CAST(#{lastRunId} AS uuid), #{regUser})
+    </insert>
+
+    <update id="updateFindingDetected">
+        UPDATE pmc_vuln_finding
+           SET last_detected_at = now(),
+               occurrence_count = occurrence_count + 1,
+               recur_count      = recur_count + #{recurInc},
+               status           = #{status},
+               severity         = #{severity},
+               last_run_id      = CAST(#{lastRunId} AS uuid),
+               upd_user         = #{updUser},
+               upd_dt           = now()
+         WHERE finding_id = #{findingId}
+    </update>
+
+    <!-- 현재 스캔에 없는 finding 자동 FIXED(부재=해소). presentCodes 비면 server+source 전부 FIXED. -->
+    <update id="markFixedForServerExcept">
+        UPDATE pmc_vuln_finding
+           SET status = 'FIXED', upd_user = #{updUser}, upd_dt = now()
+         WHERE server_id = #{serverId}
+           AND source = #{source}
+           AND status IN ('OPEN','RECURRED')
+        <if test="presentCodes != null and presentCodes.size() > 0">
+           AND check_code NOT IN
+           <foreach collection="presentCodes" item="c" open="(" separator="," close=")">#{c}</foreach>
+        </if>
+    </update>
+
+    <update id="updateFindingStatus">
+        UPDATE pmc_vuln_finding
+           SET status = #{status}, upd_user = #{updUser}, upd_dt = now()
+         WHERE finding_id = #{findingId}
+    </update>
+
+    <!-- ===== 조회 ===== -->
+
+    <select id="selectFindings" resultType="egovframework.let.pmc.vuln.service.VulnFindingVO">
+        SELECT f.finding_id, f.server_id, f.check_code, f.source, f.category, f.title, f.severity,
+               f.status, f.first_detected_at, f.last_detected_at, f.occurrence_count, f.recur_count,
+               CAST(f.last_run_id AS varchar) AS last_run_id, f.reg_dt, f.upd_dt,
+               s.hostname AS hostname, s.service_name AS service_name
+          FROM pmc_vuln_finding f
+          JOIN pmc_server s ON s.server_id = f.server_id
+         <where>
+            <if test="serverId != null"> AND f.server_id = #{serverId} </if>
+            <if test="severity != null and severity != ''"> AND f.severity = #{severity} </if>
+            <if test="status != null and status != ''"> AND f.status = #{status} </if>
+         </where>
+         ORDER BY CASE f.severity WHEN '상' THEN 0 WHEN '중' THEN 1 ELSE 2 END,
+                  f.last_detected_at DESC
+    </select>
+
+    <select id="selectFindingById" resultType="egovframework.let.pmc.vuln.service.VulnFindingVO">
+        SELECT f.finding_id, f.server_id, f.check_code, f.source, f.category, f.title, f.severity,
+               f.status, f.first_detected_at, f.last_detected_at, f.occurrence_count, f.recur_count,
+               CAST(f.last_run_id AS varchar) AS last_run_id, f.reg_dt, f.upd_dt,
+               s.hostname AS hostname, s.service_name AS service_name
+          FROM pmc_vuln_finding f
+          JOIN pmc_server s ON s.server_id = f.server_id
+         WHERE f.finding_id = #{findingId}
+    </select>
+
+    <!-- 재발 현황 요약(서버별 RECURRED 건수·등급별). H2/PG 양쪽 호환을 위해 sum(CASE) 사용. -->
+    <select id="selectRecurrenceSummary" resultType="hashmap">
+        SELECT s.server_id AS "serverId", s.hostname AS "hostname",
+               sum(CASE WHEN f.status = 'RECURRED' THEN 1 ELSE 0 END) AS "recurredCount",
+               sum(CASE WHEN f.status IN ('OPEN','RECURRED') AND f.severity = '상' THEN 1 ELSE 0 END) AS "highOpen",
+               sum(CASE WHEN f.status IN ('OPEN','RECURRED') THEN 1 ELSE 0 END) AS "openCount",
+               COALESCE(sum(f.recur_count), 0) AS "recurTotal",
+               max(f.last_detected_at) AS "lastDetectedAt"
+          FROM pmc_vuln_finding f
+          JOIN pmc_server s ON s.server_id = f.server_id
+         GROUP BY s.server_id, s.hostname
+        HAVING sum(CASE WHEN f.status IN ('OPEN','RECURRED') THEN 1 ELSE 0 END) > 0
+         ORDER BY "recurredCount" DESC, "highOpen" DESC
+    </select>
+
+    <!-- ===== 예외(수용/면제) ===== -->
+
+    <select id="selectActiveException" resultType="egovframework.let.pmc.vuln.service.VulnExceptionVO">
+        SELECT * FROM pmc_vuln_exception
+         WHERE finding_id = #{findingId}
+           AND status = 'ACTIVE'
+           AND expires_at > now()
+         ORDER BY exception_id DESC
+         LIMIT 1
+    </select>
+
+    <insert id="insertException" parameterType="egovframework.let.pmc.vuln.service.VulnExceptionVO"
+            useGeneratedKeys="true" keyProperty="exceptionId" keyColumn="exception_id">
+        INSERT INTO pmc_vuln_exception(finding_id, reason, approver, status, expires_at, reg_user)
+        VALUES(#{findingId}, #{reason}, #{approver}, COALESCE(#{status},'ACTIVE'), #{expiresAt}, #{regUser})
+    </insert>
+
+    <select id="selectExpiredExceptions" resultType="egovframework.let.pmc.vuln.service.VulnExceptionVO">
+        SELECT * FROM pmc_vuln_exception
+         WHERE status = 'ACTIVE'
+           AND expires_at &lt;= now()
+    </select>
+
+    <update id="expireException">
+        UPDATE pmc_vuln_exception SET status = 'EXPIRED'
+         WHERE exception_id = #{exceptionId} AND status = 'ACTIVE'
+    </update>
+
+    <!-- ===== 조치이력 ===== -->
+
+    <insert id="insertAction" parameterType="egovframework.let.pmc.vuln.service.VulnActionVO"
+            useGeneratedKeys="true" keyProperty="actionId" keyColumn="action_id">
+        INSERT INTO pmc_vuln_action(finding_id, action_user, action_desc, resulting_status, reg_user)
+        VALUES(#{findingId}, #{actionUser}, #{actionDesc}, #{resultingStatus}, #{regUser})
+    </insert>
+
+    <select id="selectActions" resultType="egovframework.let.pmc.vuln.service.VulnActionVO">
+        SELECT * FROM pmc_vuln_action
+         WHERE finding_id = #{findingId}
+         ORDER BY action_dt DESC, action_id DESC
+    </select>
+
+</mapper>

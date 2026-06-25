@@ -13,6 +13,8 @@ import egovframework.let.pmc.report.service.ReportService;
 import egovframework.let.pmc.report.service.ReportVO;
 import egovframework.let.pmc.risk.service.RiskAnalysisService;
 import egovframework.let.pmc.risk.service.RiskScoreVO;
+import egovframework.let.pmc.vuln.service.VulnFindingVO;
+import egovframework.let.pmc.vuln.service.VulnService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +38,7 @@ public class ReportServiceImpl implements ReportService {
     private final IngestService ingestService;
     private final PlanService planService;
     private final RiskAnalysisService riskAnalysisService;
+    private final VulnService vulnService;
     private final Map<String, ReportGenerator> generators;
 
     @Value("${Globals.ReportDir}")
@@ -44,11 +47,12 @@ public class ReportServiceImpl implements ReportService {
     @Autowired
     public ReportServiceImpl(ReportMapper reportMapper, IngestService ingestService,
                              PlanService planService, RiskAnalysisService riskAnalysisService,
-                             List<ReportGenerator> generatorList) {
+                             VulnService vulnService, List<ReportGenerator> generatorList) {
         this.reportMapper = reportMapper;
         this.ingestService = ingestService;
         this.planService = planService;
         this.riskAnalysisService = riskAnalysisService;
+        this.vulnService = vulnService;
         this.generators = new java.util.HashMap<>();
         for (ReportGenerator g : generatorList) {
             generators.put(g.type(), g);
@@ -167,6 +171,38 @@ public class ReportServiceImpl implements ReportService {
                     String.valueOf(r.getScore()), nz(r.getLevel()), r.getReasonText());
         }
         return saveAndRecord(data, type, "RISK", null, null, null, null, null, "risk-report");
+    }
+
+    @Override
+    public ReportVO generateVulnReport(String type) {
+        // OPEN/RECURRED 취약점(현재 미조치)만 보고 대상
+        List<VulnFindingVO> findings = vulnService.getFindings(null, null, null);
+        int high = 0, mid = 0, low = 0, recurred = 0, open = 0;
+        for (VulnFindingVO f : findings) {
+            boolean active = "OPEN".equals(f.getStatus()) || "RECURRED".equals(f.getStatus());
+            if (!active) continue;
+            open++;
+            if ("RECURRED".equals(f.getStatus())) recurred++;
+            if ("상".equals(f.getSeverity())) high++;
+            else if ("중".equals(f.getSeverity())) mid++;
+            else low++;
+        }
+        ReportData data = new ReportData("취약점 진단 현황 보고서");
+        data.addHeader("생성일시", java.time.LocalDateTime.now()
+                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
+        data.addHeader("미조치 취약점", String.valueOf(open));
+        data.addHeader("등급 분포", "상 " + high + " / 중 " + mid + " / 하 " + low);
+        data.addHeader("재발(RECURRED)", String.valueOf(recurred));
+
+        ReportData.Section sec = data.addSection("서버별 취약점(미조치)",
+                "호스트", "점검코드", "취약점", "등급", "상태", "발생/재발");
+        for (VulnFindingVO f : findings) {
+            if (!"OPEN".equals(f.getStatus()) && !"RECURRED".equals(f.getStatus())) continue;
+            sec.addRow(nz(f.getHostname()), nz(f.getCheckCode()), nz(f.getTitle()),
+                    nz(f.getSeverity()), nz(f.getStatus()),
+                    f.getOccurrenceCount() + "/" + f.getRecurCount());
+        }
+        return saveAndRecord(data, type, "VULN", null, null, null, null, null, "vuln-report");
     }
 
     private ReportVO saveAndRecord(ReportData data, String type, String scope, Long planId,
