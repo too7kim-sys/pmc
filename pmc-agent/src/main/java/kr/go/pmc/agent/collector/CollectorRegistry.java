@@ -6,6 +6,10 @@ import kr.go.pmc.agent.collector.os.AixOsCollector;
 import kr.go.pmc.agent.collector.os.HpuxOsCollector;
 import kr.go.pmc.agent.collector.os.LinuxOsCollector;
 import kr.go.pmc.agent.collector.os.WindowsOsCollector;
+import kr.go.pmc.agent.collector.sec.AixSecCollector;
+import kr.go.pmc.agent.collector.sec.HpuxSecCollector;
+import kr.go.pmc.agent.collector.sec.LinuxSecCollector;
+import kr.go.pmc.agent.collector.sec.WindowsSecCollector;
 import kr.go.pmc.agent.collector.svc.HttpServiceCollector;
 import kr.go.pmc.agent.collector.sw.SwCollector;
 import kr.go.pmc.agent.collector.was.WasCollector;
@@ -40,6 +44,11 @@ public class CollectorRegistry {
         all.add(new NwCollector());
         // SVC (모든 플랫폼)
         all.add(new HttpServiceCollector());
+        // SEC (보안 취약점/구성 진단, OS별)
+        all.add(new LinuxSecCollector());
+        all.add(new WindowsSecCollector());
+        all.add(new AixSecCollector());
+        all.add(new HpuxSecCollector());
     }
 
     /**
