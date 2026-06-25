@@ -6,6 +6,7 @@ import egovframework.let.pmc.monitoring.service.MonitoringMapper;
 import egovframework.let.pmc.notify.service.AlertChannelMapper;
 import egovframework.let.pmc.notify.service.AlertMapper;
 import egovframework.let.pmc.risk.service.RiskMapper;
+import egovframework.let.pmc.vuln.service.VulnMapper;
 import org.apache.ibatis.builder.xml.XMLMapperBuilder;
 import org.apache.ibatis.datasource.unpooled.UnpooledDataSource;
 import org.apache.ibatis.mapping.Environment;
@@ -55,11 +56,12 @@ class PgSchemaIntegrationTest {
                 .withDatabaseName("pmc").withUsername("pmc").withPassword("pmc");
         pg.start();
 
-        // DDL → 시드 순서대로 적용(README 순서: V*, S2*, S1*)
+        // DDL → 시드 순서대로 적용(README 순서: V*(버전 숫자순), S2*, S1*, S3*)
         List<File> scripts = new ArrayList<>();
         scripts.addAll(sortedSql(new File("../db/ddl")));
         scripts.addAll(filterSql(new File("../db/seed"), "S2"));
         scripts.addAll(filterSql(new File("../db/seed"), "S1"));
+        scripts.addAll(filterSql(new File("../db/seed"), "S3"));
         try (Connection c = java.sql.DriverManager.getConnection(
                 pg.getJdbcUrl(), pg.getUsername(), pg.getPassword())) {
             for (File f : scripts) {
@@ -126,6 +128,17 @@ class PgSchemaIntegrationTest {
         }
     }
 
+    @Test
+    void vulnQueriesRun() {
+        try (SqlSession s = sqlSessionFactory.openSession()) {
+            VulnMapper vm = s.getMapper(VulnMapper.class);
+            vm.selectFindings(null, null, null);
+            vm.selectRecurrenceSummary();
+            vm.selectExpiredExceptions();
+            vm.selectFinding(1L, "SEC_U01_ROOT_REMOTE", "BUILTIN");
+        }
+    }
+
     // ---- helpers ----
 
     private static boolean isDockerAvailable() {
@@ -139,8 +152,14 @@ class PgSchemaIntegrationTest {
     private static List<File> sortedSql(File dir) {
         File[] arr = dir.listFiles((d, n) -> n.endsWith(".sql"));
         List<File> list = arr == null ? new ArrayList<>() : new ArrayList<>(Arrays.asList(arr));
-        list.sort((a, b) -> a.getName().compareTo(b.getName()));
+        // 버전 숫자 오름차순(V1<…<V9<V10). 문자열 정렬은 "V10" 을 "V1" 앞에 두므로 사용 금지.
+        list.sort((a, b) -> Integer.compare(version(a), version(b)));
         return list;
+    }
+
+    private static int version(File f) {
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("V(\\d+)").matcher(f.getName());
+        return m.find() ? Integer.parseInt(m.group(1)) : 0;
     }
 
     private static List<File> filterSql(File dir, String prefix) {
