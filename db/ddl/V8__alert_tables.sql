@@ -4,7 +4,7 @@
 
 CREATE TABLE IF NOT EXISTS pmc_alert_log (
     alert_id     BIGSERIAL    PRIMARY KEY,
-    alert_type   VARCHAR(20)  NOT NULL,        -- RUN_CRITICAL/SVC_FAIL/HB_STALE/AUTO_REPORT
+    alert_type   VARCHAR(20)  NOT NULL,        -- RUN_CRITICAL/SVC_FAIL/HB_STALE/AUTO_REPORT/VULN_NEW/VULN_RECUR
     server_id    BIGINT       REFERENCES pmc_server(server_id),
     ref_id       VARCHAR(64),                  -- run_id 등 참조 식별자
     severity     VARCHAR(10),                  -- WARN/CRITICAL 등

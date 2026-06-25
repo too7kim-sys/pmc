@@ -34,7 +34,8 @@ pmc/
 ```bash
 # 1) DB 준비
 createdb pmc   # role pmc / pwd pmc (globals.properties 참고)
-for f in db/ddl/V*.sql db/seed/S2*.sql db/seed/S1*.sql; do psql -U pmc -d pmc -f "$f"; done
+# DDL 은 버전 숫자순(V1..V10)으로 적용해야 함 — sort -V 사용(문자열 정렬은 V10 을 V1 앞에 둠)
+for f in $(ls db/ddl/V*.sql | sort -V) db/seed/S2*.sql db/seed/S1*.sql db/seed/S3*.sql; do psql -U pmc -d pmc -f "$f"; done
 
 # 2) 서버 빌드/실행 (Java 11)
 export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
