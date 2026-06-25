@@ -7,6 +7,8 @@ import egovframework.let.pmc.ingest.service.*;
 import egovframework.let.pmc.notify.service.AlertService;
 import egovframework.let.pmc.vuln.service.VulnFinding;
 import egovframework.let.pmc.vuln.service.VulnService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +24,8 @@ import java.util.Map;
  */
 @Service
 public class IngestServiceImpl implements IngestService {
+
+    private static final Logger log = LoggerFactory.getLogger(IngestServiceImpl.class);
 
     private final InspectionMapper inspectionMapper;
     private final AgentMapper agentMapper;
@@ -156,16 +160,18 @@ public class IngestServiceImpl implements IngestService {
                 if (hasSec) {
                     vulnService.processFindings(serverId, r.runId, "BUILTIN", findings, true);
                 }
-            } catch (Exception ignore) {
-                // 취약점 추적 실패는 수신 처리에 영향 주지 않음
+            } catch (Exception e) {
+                // 취약점 추적 실패는 수신 처리에 영향 주지 않음(비차단). 추적용 로깅만 남긴다.
+                log.warn("취약점 추적 처리 실패(runId={}): {}", r.runId, e.getMessage());
             }
         }
 
         // 이상 알림(Webhook) — 비활성/중복억제는 AlertService 가 처리, ingest 실패에 영향 없음
         try {
             alertService.raiseRunAlert(run, svcFail);
-        } catch (Exception ignore) {
-            // 알림 실패는 수신 처리에 영향 주지 않음
+        } catch (Exception e) {
+            // 알림 실패는 수신 처리에 영향 주지 않음(비차단). 추적용 로깅만 남긴다.
+            log.warn("이상 알림 발송 실패(runId={}): {}", r.runId, e.getMessage());
         }
 
         data.put("duplicated", false);
