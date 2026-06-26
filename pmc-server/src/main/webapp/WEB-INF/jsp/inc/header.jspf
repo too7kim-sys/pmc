@@ -19,22 +19,13 @@
     </div>
 </header>
 <nav class="gnb">
-    <a href="<c:url value='/pmc/dashboard.do'/>">대시보드</a>
-    <a href="<c:url value='/pmc/agent/list.do'/>">대상/Agent</a>
-    <a href="<c:url value='/pmc/policy/list.do'/>">점검정책</a>
-    <a href="<c:url value='/pmc/plan/list.do'/>">정기점검계획</a>
-    <a href="<c:url value='/pmc/inspection/list.do'/>">점검이력</a>
-    <a href="<c:url value='/pmc/monitoring/realtime.do'/>">모니터링</a>
-    <a href="<c:url value='/pmc/risk/list.do'/>">문제가능성</a>
-    <a href="<c:url value='/pmc/vuln/list.do'/>">취약점진단</a>
-    <a href="<c:url value='/pmc/report/list.do'/>">보고서</a>
-    <sec:authorize access="hasRole('ADMIN')">
-        <a href="<c:url value='/cmm/cmmnCode/list.do'/>">공통코드</a>
-        <a href="<c:url value='/pmc/admin/menu.do'/>">메뉴관리</a>
-        <a href="<c:url value='/pmc/admin/authority.do'/>">권한관리</a>
-        <a href="<c:url value='/pmc/admin/user.do'/>">사용자</a>
-        <a href="<c:url value='/pmc/admin/dq.do'/>">데이터품질</a>
-        <a href="<c:url value='/pmc/admin/alertChannel.do'/>">알림채널</a>
-    </sec:authorize>
+    <%-- 데이터 구동형 GNB: 로그인 롤이 접근 허용된 메뉴(comtnauthormenu)만 노출.
+         메뉴/권한관리 화면에서 제어. (URL 접근통제는 context-security.xml 이 1차 적용) --%>
+    <c:forEach var="m" items="${gnbMenus}">
+        <a href="<c:url value='${m.menuUrl}'/>"><c:out value="${m.menuNm}"/></a>
+    </c:forEach>
+    <c:if test="${empty gnbMenus}">
+        <a href="<c:url value='/pmc/dashboard.do'/>">대시보드</a>
+    </c:if>
 </nav>
 <main>

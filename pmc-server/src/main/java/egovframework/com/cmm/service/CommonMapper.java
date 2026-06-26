@@ -59,4 +59,8 @@ public interface CommonMapper {
     int deleteAuthorMenus(@Param("authorCode") String authorCode);
     int deleteAuthorMenuByMenu(@Param("menuNo") Long menuNo);
     int insertAuthorMenu(@Param("authorCode") String authorCode, @Param("menuNo") Long menuNo);
+
+    // ===== GNB(데이터 구동형 네비게이션) =====
+    /** 주어진 롤들이 접근 가능한, URL 이 있는 메뉴를 정렬 순으로(중복 제거). */
+    List<Map<String, Object>> selectNavMenus(@Param("roles") List<String> roles);
 }

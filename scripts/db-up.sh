@@ -97,7 +97,7 @@ FAILED=0
 say "스키마/시드 적용..."
 # shellcheck disable=SC2046
 for f in $(ls "$DDL_DIR"/V*.sql | sort -V); do apply "$f"; done
-for f in "$SEED_DIR"/S2*.sql "$SEED_DIR"/S1*.sql "$SEED_DIR"/S3*.sql; do [ -f "$f" ] && apply "$f"; done
+for f in "$SEED_DIR"/S2*.sql "$SEED_DIR"/S1*.sql "$SEED_DIR"/S3*.sql "$SEED_DIR"/S4*.sql; do [ -f "$f" ] && apply "$f"; done
 
 # 4) 최종 점검 -------------------------------------------------------
 ADMIN=$(PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -tAc \

@@ -36,7 +36,7 @@ pmc/
 bash scripts/db-up.sh    # 앱(IDE/Tomcat·Jetty) 구동 "전에" 한 번 실행. 세션마다 PG가 내려가면 재실행.
 # (수동으로 하려면 ↓ — DDL 은 버전 숫자순으로. 문자열 정렬은 V10 을 V1 앞에 두므로 sort -V 필수)
 # createdb pmc   # role pmc / pwd pmc (globals.properties 참고)
-# for f in $(ls db/ddl/V*.sql | sort -V) db/seed/S2*.sql db/seed/S1*.sql db/seed/S3*.sql; do psql -U pmc -d pmc -f "$f"; done
+# for f in $(ls db/ddl/V*.sql | sort -V) db/seed/S2*.sql db/seed/S1*.sql db/seed/S3*.sql db/seed/S4*.sql; do psql -U pmc -d pmc -f "$f"; done
 # ※ 테스트(mvn test)는 인메모리 H2 사용 → DB 준비 불필요. 앱 구동만 PostgreSQL 사용.
 
 # 2) 서버 빌드/실행 (Java 11)

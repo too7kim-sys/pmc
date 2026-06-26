@@ -201,4 +201,17 @@
         ON CONFLICT DO NOTHING
     </insert>
 
+    <!-- ===== GNB 네비게이션(롤 기반) ===== -->
+    <select id="selectNavMenus" resultType="hashmap">
+        SELECT DISTINCT m.menu_no AS "menuNo", m.menu_nm AS "menuNm", m.menu_url AS "menuUrl",
+               m.menu_ordr AS "menuOrdr"
+          FROM comtnmenuinfo m
+          JOIN comtnauthormenu am ON am.menu_no = m.menu_no
+         WHERE m.use_yn = 'Y'
+           AND m.menu_url IS NOT NULL
+           AND am.author_code IN
+           <foreach collection="roles" item="r" open="(" separator="," close=")">#{r}</foreach>
+         ORDER BY "menuOrdr", "menuNo"
+    </select>
+
 </mapper>

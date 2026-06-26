@@ -56,12 +56,13 @@ class PgSchemaIntegrationTest {
                 .withDatabaseName("pmc").withUsername("pmc").withPassword("pmc");
         pg.start();
 
-        // DDL → 시드 순서대로 적용(README 순서: V*(버전 숫자순), S2*, S1*, S3*)
+        // DDL → 시드 순서대로 적용(README 순서: V*(버전 숫자순), S2*, S1*, S3*, S4*)
         List<File> scripts = new ArrayList<>();
         scripts.addAll(sortedSql(new File("../db/ddl")));
         scripts.addAll(filterSql(new File("../db/seed"), "S2"));
         scripts.addAll(filterSql(new File("../db/seed"), "S1"));
         scripts.addAll(filterSql(new File("../db/seed"), "S3"));
+        scripts.addAll(filterSql(new File("../db/seed"), "S4"));
         try (Connection c = java.sql.DriverManager.getConnection(
                 pg.getJdbcUrl(), pg.getUsername(), pg.getPassword())) {
             for (File f : scripts) {
