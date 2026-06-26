@@ -101,6 +101,98 @@ public class CommonAdminServiceImpl implements CommonAdminService {
         commonMapper.deleteUser(emplyrId);
     }
 
+    // ===== 메뉴관리 =====
+
+    @Override
+    @Transactional
+    public void saveMenu(Long menuNo, String menuNm, String menuUrl, Long upperMenuNo,
+                         Integer menuOrdr, String useYn, boolean isNew) {
+        if (menuNo == null || isBlank(menuNm)) {
+            throw new ApiException("INVALID_REQUEST", "메뉴번호·메뉴명은 필수입니다.");
+        }
+        if (menuNo.equals(upperMenuNo)) {
+            throw new ApiException("INVALID_REQUEST", "상위메뉴를 자기 자신으로 지정할 수 없습니다.");
+        }
+        Map<String, Object> p = new HashMap<>();
+        p.put("menuNo", menuNo);
+        p.put("menuNm", menuNm);
+        p.put("menuUrl", emptyToNull(menuUrl));
+        p.put("upperMenuNo", upperMenuNo);
+        p.put("menuOrdr", menuOrdr);
+        p.put("useYn", normalizeYn(useYn));
+        if (isNew) {
+            if (commonMapper.countMenu(menuNo) > 0) {
+                throw new ApiException("DUPLICATE", "이미 존재하는 메뉴번호입니다: " + menuNo);
+            }
+            commonMapper.insertMenu(p);
+        } else {
+            commonMapper.updateMenu(p);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void deleteMenu(Long menuNo) {
+        if (commonMapper.countChildMenu(menuNo) > 0) {
+            throw new ApiException("CONFLICT", "하위 메뉴가 있어 삭제할 수 없습니다. 하위 메뉴를 먼저 정리하세요.");
+        }
+        commonMapper.deleteAuthorMenuByMenu(menuNo); // 권한 매핑 정리(FK)
+        commonMapper.deleteMenu(menuNo);
+    }
+
+    // ===== 권한관리 =====
+
+    @Override
+    @Transactional
+    public void saveAuthority(String authorCode, String authorNm, String authorDe, boolean isNew) {
+        if (isBlank(authorCode) || isBlank(authorNm)) {
+            throw new ApiException("INVALID_REQUEST", "권한코드·권한명은 필수입니다.");
+        }
+        Map<String, Object> p = new HashMap<>();
+        p.put("authorCode", authorCode);
+        p.put("authorNm", authorNm);
+        p.put("authorDe", emptyToNull(authorDe));
+        if (isNew) {
+            if (commonMapper.countAuthority(authorCode) > 0) {
+                throw new ApiException("DUPLICATE", "이미 존재하는 권한코드입니다: " + authorCode);
+            }
+            commonMapper.insertAuthority(p);
+        } else {
+            commonMapper.updateAuthority(p);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void deleteAuthority(String authorCode) {
+        if ("ROLE_ADMIN".equals(authorCode) || "ROLE_USER".equals(authorCode)) {
+            throw new ApiException("FORBIDDEN", "기본 권한(" + authorCode + ")은 삭제할 수 없습니다.");
+        }
+        if (commonMapper.countUsersOfAuthority(authorCode) > 0) {
+            throw new ApiException("CONFLICT", "해당 권한을 가진 사용자가 있어 삭제할 수 없습니다.");
+        }
+        commonMapper.deleteAuthorMenus(authorCode); // 메뉴 매핑 정리(FK)
+        commonMapper.deleteAuthority(authorCode);
+    }
+
+    @Override
+    @Transactional
+    public void saveRoleMenus(String authorCode, List<Long> menuNos) {
+        if (isBlank(authorCode)) {
+            throw new ApiException("INVALID_REQUEST", "권한코드가 필요합니다.");
+        }
+        commonMapper.deleteAuthorMenus(authorCode);
+        if (menuNos != null) {
+            for (Long m : menuNos) {
+                if (m != null) commonMapper.insertAuthorMenu(authorCode, m);
+            }
+        }
+    }
+
+    private String emptyToNull(String s) {
+        return isBlank(s) ? null : s.trim();
+    }
+
     private String normalizeYn(String v) {
         return "Y".equalsIgnoreCase(v) ? "Y" : "N";
     }

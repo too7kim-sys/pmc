@@ -36,4 +36,27 @@ public interface CommonMapper {
     List<String> selectUserRoles(@Param("emplyrId") String emplyrId);
     int deleteUserRoles(@Param("emplyrId") String emplyrId);
     int insertUserRole(@Param("emplyrId") String emplyrId, @Param("authorCode") String authorCode);
+
+    // ===== 권한관리(롤 CRUD) =====
+    Map<String, Object> selectAuthorityOne(@Param("authorCode") String authorCode);
+    int countAuthority(@Param("authorCode") String authorCode);
+    int insertAuthority(Map<String, Object> p);
+    int updateAuthority(Map<String, Object> p);
+    int deleteAuthority(@Param("authorCode") String authorCode);
+    int countUsersOfAuthority(@Param("authorCode") String authorCode);
+
+    // ===== 메뉴관리 =====
+    List<Map<String, Object>> selectMenus();
+    Map<String, Object> selectMenuOne(@Param("menuNo") Long menuNo);
+    int countMenu(@Param("menuNo") Long menuNo);
+    int insertMenu(Map<String, Object> p);
+    int updateMenu(Map<String, Object> p);
+    int deleteMenu(@Param("menuNo") Long menuNo);
+    int countChildMenu(@Param("menuNo") Long menuNo);
+
+    // ===== 권한-메뉴 매핑 =====
+    List<Long> selectAuthorMenus(@Param("authorCode") String authorCode);
+    int deleteAuthorMenus(@Param("authorCode") String authorCode);
+    int deleteAuthorMenuByMenu(@Param("menuNo") Long menuNo);
+    int insertAuthorMenu(@Param("authorCode") String authorCode, @Param("menuNo") Long menuNo);
 }

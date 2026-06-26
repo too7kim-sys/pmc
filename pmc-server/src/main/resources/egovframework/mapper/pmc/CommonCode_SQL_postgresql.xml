@@ -113,4 +113,92 @@
         ON CONFLICT DO NOTHING
     </insert>
 
+    <!-- ===== 권한관리(롤 CRUD) ===== -->
+
+    <select id="selectAuthorityOne" resultType="hashmap">
+        SELECT author_code AS "authorCode", author_nm AS "authorNm", author_de AS "authorDe"
+          FROM comtnauthorinfo WHERE author_code=#{authorCode}
+    </select>
+
+    <select id="countAuthority" resultType="int">
+        SELECT count(*) FROM comtnauthorinfo WHERE author_code=#{authorCode}
+    </select>
+
+    <insert id="insertAuthority" parameterType="map">
+        INSERT INTO comtnauthorinfo(author_code, author_nm, author_de)
+        VALUES(#{authorCode}, #{authorNm}, #{authorDe})
+    </insert>
+
+    <update id="updateAuthority" parameterType="map">
+        UPDATE comtnauthorinfo SET author_nm=#{authorNm}, author_de=#{authorDe}
+         WHERE author_code=#{authorCode}
+    </update>
+
+    <delete id="deleteAuthority">
+        DELETE FROM comtnauthorinfo WHERE author_code=#{authorCode}
+    </delete>
+
+    <select id="countUsersOfAuthority" resultType="int">
+        SELECT count(*) FROM comtnempauthor WHERE author_code=#{authorCode}
+    </select>
+
+    <!-- ===== 메뉴관리 ===== -->
+
+    <select id="selectMenus" resultType="hashmap">
+        SELECT m.menu_no AS "menuNo", m.menu_nm AS "menuNm", m.menu_url AS "menuUrl",
+               m.upper_menu_no AS "upperMenuNo", m.menu_ordr AS "menuOrdr", m.use_yn AS "useYn",
+               p.menu_nm AS "upperMenuNm"
+          FROM comtnmenuinfo m LEFT JOIN comtnmenuinfo p ON p.menu_no=m.upper_menu_no
+         ORDER BY COALESCE(m.upper_menu_no, m.menu_no), m.menu_ordr, m.menu_no
+    </select>
+
+    <select id="selectMenuOne" resultType="hashmap">
+        SELECT menu_no AS "menuNo", menu_nm AS "menuNm", menu_url AS "menuUrl",
+               upper_menu_no AS "upperMenuNo", menu_ordr AS "menuOrdr", use_yn AS "useYn"
+          FROM comtnmenuinfo WHERE menu_no=#{menuNo}
+    </select>
+
+    <select id="countMenu" resultType="int">
+        SELECT count(*) FROM comtnmenuinfo WHERE menu_no=#{menuNo}
+    </select>
+
+    <insert id="insertMenu" parameterType="map">
+        INSERT INTO comtnmenuinfo(menu_no, menu_nm, menu_url, upper_menu_no, menu_ordr, use_yn)
+        VALUES(#{menuNo}, #{menuNm}, #{menuUrl}, #{upperMenuNo}, COALESCE(#{menuOrdr},0), COALESCE(#{useYn},'Y'))
+    </insert>
+
+    <update id="updateMenu" parameterType="map">
+        UPDATE comtnmenuinfo
+           SET menu_nm=#{menuNm}, menu_url=#{menuUrl}, upper_menu_no=#{upperMenuNo},
+               menu_ordr=COALESCE(#{menuOrdr},0), use_yn=COALESCE(#{useYn},'Y')
+         WHERE menu_no=#{menuNo}
+    </update>
+
+    <delete id="deleteMenu">
+        DELETE FROM comtnmenuinfo WHERE menu_no=#{menuNo}
+    </delete>
+
+    <select id="countChildMenu" resultType="int">
+        SELECT count(*) FROM comtnmenuinfo WHERE upper_menu_no=#{menuNo}
+    </select>
+
+    <!-- ===== 권한-메뉴 매핑 ===== -->
+
+    <select id="selectAuthorMenus" resultType="long">
+        SELECT menu_no FROM comtnauthormenu WHERE author_code=#{authorCode}
+    </select>
+
+    <delete id="deleteAuthorMenus">
+        DELETE FROM comtnauthormenu WHERE author_code=#{authorCode}
+    </delete>
+
+    <delete id="deleteAuthorMenuByMenu">
+        DELETE FROM comtnauthormenu WHERE menu_no=#{menuNo}
+    </delete>
+
+    <insert id="insertAuthorMenu">
+        INSERT INTO comtnauthormenu(author_code, menu_no) VALUES(#{authorCode}, #{menuNo})
+        ON CONFLICT DO NOTHING
+    </insert>
+
 </mapper>

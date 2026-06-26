@@ -22,4 +22,15 @@ public interface CommonAdminService {
 
     /** 사용자 삭제(권한 매핑 → 사용자). */
     void deleteUser(String emplyrId);
+
+    // ===== 메뉴관리 =====
+    void saveMenu(Long menuNo, String menuNm, String menuUrl, Long upperMenuNo,
+                  Integer menuOrdr, String useYn, boolean isNew);
+    void deleteMenu(Long menuNo);
+
+    // ===== 권한관리 =====
+    void saveAuthority(String authorCode, String authorNm, String authorDe, boolean isNew);
+    void deleteAuthority(String authorCode);
+    /** 권한별 메뉴 접근 매핑 일괄 저장(삭제 후 재삽입). */
+    void saveRoleMenus(String authorCode, List<Long> menuNos);
 }

@@ -30,6 +30,8 @@
     <a href="<c:url value='/pmc/report/list.do'/>">보고서</a>
     <sec:authorize access="hasRole('ADMIN')">
         <a href="<c:url value='/cmm/cmmnCode/list.do'/>">공통코드</a>
+        <a href="<c:url value='/pmc/admin/menu.do'/>">메뉴관리</a>
+        <a href="<c:url value='/pmc/admin/authority.do'/>">권한관리</a>
         <a href="<c:url value='/pmc/admin/user.do'/>">사용자</a>
         <a href="<c:url value='/pmc/admin/dq.do'/>">데이터품질</a>
         <a href="<c:url value='/pmc/admin/alertChannel.do'/>">알림채널</a>
