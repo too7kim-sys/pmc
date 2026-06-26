@@ -32,10 +32,12 @@ pmc/
 요구: JDK 11(서버, eGovFrame 4.x 호환), JDK 8+(Agent 빌드/실행), Maven 3.9, PostgreSQL 12+.
 
 ```bash
-# 1) DB 준비
-createdb pmc   # role pmc / pwd pmc (globals.properties 참고)
-# DDL 은 버전 숫자순(V1..V10)으로 적용해야 함 — sort -V 사용(문자열 정렬은 V10 을 V1 앞에 둠)
-for f in $(ls db/ddl/V*.sql | sort -V) db/seed/S2*.sql db/seed/S1*.sql db/seed/S3*.sql; do psql -U pmc -d pmc -f "$f"; done
+# 1) DB 준비 — 편의 스크립트(PG 기동 + 롤/DB 생성 + DDL/시드 멱등 적용)
+bash scripts/db-up.sh    # 앱(IDE/Tomcat·Jetty) 구동 "전에" 한 번 실행. 세션마다 PG가 내려가면 재실행.
+# (수동으로 하려면 ↓ — DDL 은 버전 숫자순으로. 문자열 정렬은 V10 을 V1 앞에 두므로 sort -V 필수)
+# createdb pmc   # role pmc / pwd pmc (globals.properties 참고)
+# for f in $(ls db/ddl/V*.sql | sort -V) db/seed/S2*.sql db/seed/S1*.sql db/seed/S3*.sql; do psql -U pmc -d pmc -f "$f"; done
+# ※ 테스트(mvn test)는 인메모리 H2 사용 → DB 준비 불필요. 앱 구동만 PostgreSQL 사용.
 
 # 2) 서버 빌드/실행 (Java 11)
 export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
