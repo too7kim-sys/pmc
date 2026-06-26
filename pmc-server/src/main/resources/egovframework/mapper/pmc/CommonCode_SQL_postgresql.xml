@@ -11,6 +11,46 @@
          ORDER BY d.cl_code, d.sort_ordr
     </select>
 
+    <!-- ===== 공통코드 CRUD ===== -->
+
+    <select id="selectCodeGroups" resultType="hashmap">
+        SELECT cl_code AS "clCode", cl_code_nm AS "clCodeNm"
+          FROM comtccmmnclcode ORDER BY cl_code
+    </select>
+
+    <select id="selectCode" resultType="hashmap">
+        SELECT d.cl_code AS "clCode", g.cl_code_nm AS "clCodeNm", d.code AS "code",
+               d.code_nm AS "codeNm", d.sort_ordr AS "sortOrdr", d.use_yn AS "useYn"
+          FROM comtccmmncodedetail d JOIN comtccmmnclcode g ON g.cl_code=d.cl_code
+         WHERE d.cl_code=#{clCode} AND d.code=#{code}
+    </select>
+
+    <select id="countGroup" resultType="int">
+        SELECT count(*) FROM comtccmmnclcode WHERE cl_code=#{clCode}
+    </select>
+
+    <insert id="insertGroup">
+        INSERT INTO comtccmmnclcode(cl_code, cl_code_nm) VALUES(#{clCode}, #{clCodeNm})
+        ON CONFLICT (cl_code) DO NOTHING
+    </insert>
+
+    <insert id="insertCode" parameterType="map">
+        INSERT INTO comtccmmncodedetail(cl_code, code, code_nm, sort_ordr, use_yn)
+        VALUES(#{clCode}, #{code}, #{codeNm}, COALESCE(#{sortOrdr},0), COALESCE(#{useYn},'Y'))
+    </insert>
+
+    <update id="updateCode" parameterType="map">
+        UPDATE comtccmmncodedetail
+           SET code_nm=#{codeNm}, sort_ordr=COALESCE(#{sortOrdr},0), use_yn=COALESCE(#{useYn},'Y')
+         WHERE cl_code=#{clCode} AND code=#{code}
+    </update>
+
+    <delete id="deleteCode">
+        DELETE FROM comtccmmncodedetail WHERE cl_code=#{clCode} AND code=#{code}
+    </delete>
+
+    <!-- ===== 사용자 ===== -->
+
     <select id="selectUsers" resultType="hashmap">
         SELECT e.emplyr_id AS "emplyrId", e.user_nm AS "userNm", e.email_adres AS "emailAdres",
                e.ofcps_nm AS "ofcpsNm", e.dept_code AS "deptCode", e.emplyr_sttus AS "emplyrSttus",
@@ -18,5 +58,59 @@
                (SELECT string_agg(author_code, ',') FROM comtnempauthor a WHERE a.emplyr_id=e.emplyr_id) AS "roles"
           FROM comtnemplyrinfo e ORDER BY e.emplyr_id
     </select>
+
+    <select id="selectUserOne" resultType="hashmap">
+        SELECT emplyr_id AS "emplyrId", user_nm AS "userNm", email_adres AS "emailAdres",
+               ofcps_nm AS "ofcpsNm", dept_code AS "deptCode", emplyr_sttus AS "emplyrSttus",
+               lock_at AS "lockAt"
+          FROM comtnemplyrinfo WHERE emplyr_id=#{emplyrId}
+    </select>
+
+    <select id="countUser" resultType="int">
+        SELECT count(*) FROM comtnemplyrinfo WHERE emplyr_id=#{emplyrId}
+    </select>
+
+    <insert id="insertUser" parameterType="map">
+        INSERT INTO comtnemplyrinfo(emplyr_id, user_nm, password, email_adres, ofcps_nm, dept_code,
+                                    emplyr_sttus, lock_at, pwd_chg_dt)
+        VALUES(#{emplyrId}, #{userNm}, #{password}, #{emailAdres}, #{ofcpsNm}, #{deptCode},
+               COALESCE(#{emplyrSttus},'P'), COALESCE(#{lockAt},'N'), now())
+    </insert>
+
+    <update id="updateUser" parameterType="map">
+        UPDATE comtnemplyrinfo
+           SET user_nm=#{userNm}, email_adres=#{emailAdres}, ofcps_nm=#{ofcpsNm},
+               dept_code=#{deptCode}, emplyr_sttus=COALESCE(#{emplyrSttus},'P'),
+               lock_at=COALESCE(#{lockAt},'N')
+         WHERE emplyr_id=#{emplyrId}
+    </update>
+
+    <update id="updateUserPassword">
+        UPDATE comtnemplyrinfo SET password=#{password}, pwd_chg_dt=now(), fail_cnt=0
+         WHERE emplyr_id=#{emplyrId}
+    </update>
+
+    <delete id="deleteUser">
+        DELETE FROM comtnemplyrinfo WHERE emplyr_id=#{emplyrId}
+    </delete>
+
+    <!-- ===== 권한(롤) ===== -->
+
+    <select id="selectRoles" resultType="hashmap">
+        SELECT author_code AS "authorCode", author_nm AS "authorNm" FROM comtnauthorinfo ORDER BY author_code
+    </select>
+
+    <select id="selectUserRoles" resultType="string">
+        SELECT author_code FROM comtnempauthor WHERE emplyr_id=#{emplyrId}
+    </select>
+
+    <delete id="deleteUserRoles">
+        DELETE FROM comtnempauthor WHERE emplyr_id=#{emplyrId}
+    </delete>
+
+    <insert id="insertUserRole">
+        INSERT INTO comtnempauthor(emplyr_id, author_code) VALUES(#{emplyrId}, #{authorCode})
+        ON CONFLICT DO NOTHING
+    </insert>
 
 </mapper>
