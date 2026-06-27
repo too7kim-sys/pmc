@@ -17,4 +17,7 @@ public interface UserMapper {
     List<String> selectAuthorities(@Param("emplyrId") String emplyrId);
 
     void updateLoginSuccess(@Param("emplyrId") String emplyrId);
+
+    /** 로그인 실패 1회 누적, 임계치 도달 시 계정 잠금(lock_at='Y'). */
+    void lockIfExceeded(@Param("emplyrId") String emplyrId, @Param("threshold") int threshold);
 }

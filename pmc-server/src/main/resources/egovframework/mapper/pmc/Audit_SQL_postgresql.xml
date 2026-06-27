@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="egovframework.com.cmm.service.AuditMapper">
+
+    <insert id="insertAudit" parameterType="map">
+        INSERT INTO pmc_audit_log(actor_id, action, target_type, target_id, details, actor_ip)
+        VALUES(#{actorId}, #{action}, #{targetType}, #{targetId}, #{details}, #{actorIp})
+    </insert>
+
+    <select id="selectAuditLog" resultType="hashmap">
+        SELECT audit_id AS "auditId", actor_id AS "actorId", action AS "action",
+               target_type AS "targetType", target_id AS "targetId", details AS "details",
+               actor_ip AS "actorIp", to_char(reg_dt,'YYYY-MM-DD HH24:MI:SS') AS "regDt"
+          FROM pmc_audit_log
+         ORDER BY audit_id DESC
+         LIMIT #{limit}
+    </select>
+
+</mapper>

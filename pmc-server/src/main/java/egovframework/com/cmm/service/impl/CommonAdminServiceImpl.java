@@ -1,5 +1,6 @@
 package egovframework.com.cmm.service.impl;
 
+import egovframework.com.cmm.service.AuditService;
 import egovframework.com.cmm.service.CommonAdminService;
 import egovframework.com.cmm.service.CommonMapper;
 import egovframework.let.pmc.common.ApiException;
@@ -13,18 +14,36 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 공통코드/사용자 관리 서비스 구현. 비밀번호는 bcrypt(PasswordEncoder)로 해시.
+ * 공통코드/사용자 관리 서비스 구현. 비밀번호는 bcrypt(PasswordEncoder)로 해시,
+ * 복잡도 정책 검증 + 주요 변경 감사로그 기록.
  */
 @Service
 public class CommonAdminServiceImpl implements CommonAdminService {
 
     private final CommonMapper commonMapper;
     private final PasswordEncoder passwordEncoder;
+    private final AuditService auditService;
 
     @Autowired
-    public CommonAdminServiceImpl(CommonMapper commonMapper, PasswordEncoder passwordEncoder) {
+    public CommonAdminServiceImpl(CommonMapper commonMapper, PasswordEncoder passwordEncoder,
+                                  AuditService auditService) {
         this.commonMapper = commonMapper;
         this.passwordEncoder = passwordEncoder;
+        this.auditService = auditService;
+    }
+
+    /** 비밀번호 복잡도(행안부 권장): 9자 이상 + 영문/숫자/특수 중 2종류 이상. */
+    private void validatePassword(String pw) {
+        if (pw == null || pw.length() < 9) {
+            throw new ApiException("WEAK_PASSWORD", "비밀번호는 9자 이상이어야 합니다.");
+        }
+        int classes = 0;
+        if (pw.matches(".*[A-Za-z].*")) classes++;
+        if (pw.matches(".*[0-9].*")) classes++;
+        if (pw.matches(".*[^A-Za-z0-9].*")) classes++;
+        if (classes < 2) {
+            throw new ApiException("WEAK_PASSWORD", "영문·숫자·특수문자 중 2종류 이상을 포함해야 합니다.");
+        }
     }
 
     @Override
@@ -52,12 +71,14 @@ public class CommonAdminServiceImpl implements CommonAdminService {
         } else {
             commonMapper.updateCode(p);
         }
+        auditService.log(isNew ? "CODE_CREATE" : "CODE_UPDATE", "CODE", clCode + "/" + code, codeNm);
     }
 
     @Override
     @Transactional
     public void deleteCode(String clCode, String code) {
         commonMapper.deleteCode(clCode, code);
+        auditService.log("CODE_DELETE", "CODE", clCode + "/" + code, null);
     }
 
     @Override
@@ -77,11 +98,13 @@ public class CommonAdminServiceImpl implements CommonAdminService {
             if (isBlank(rawPassword)) {
                 throw new ApiException("INVALID_REQUEST", "신규 사용자는 비밀번호가 필수입니다.");
             }
+            validatePassword(rawPassword);
             user.put("password", passwordEncoder.encode(rawPassword));
             commonMapper.insertUser(user);
         } else {
             commonMapper.updateUser(user);
             if (!isBlank(rawPassword)) {
+                validatePassword(rawPassword);
                 commonMapper.updateUserPassword(emplyrId, passwordEncoder.encode(rawPassword));
             }
         }
@@ -92,6 +115,8 @@ public class CommonAdminServiceImpl implements CommonAdminService {
                 if (!isBlank(r)) commonMapper.insertUserRole(emplyrId, r.trim());
             }
         }
+        auditService.log(isNew ? "USER_CREATE" : "USER_UPDATE", "USER", emplyrId,
+                "roles=" + (roles == null ? "" : roles));
     }
 
     @Override
@@ -99,6 +124,7 @@ public class CommonAdminServiceImpl implements CommonAdminService {
     public void deleteUser(String emplyrId) {
         commonMapper.deleteUserRoles(emplyrId);
         commonMapper.deleteUser(emplyrId);
+        auditService.log("USER_DELETE", "USER", emplyrId, null);
     }
 
     // ===== 메뉴관리 =====
@@ -128,6 +154,7 @@ public class CommonAdminServiceImpl implements CommonAdminService {
         } else {
             commonMapper.updateMenu(p);
         }
+        auditService.log(isNew ? "MENU_CREATE" : "MENU_UPDATE", "MENU", String.valueOf(menuNo), menuNm);
     }
 
     @Override
@@ -138,6 +165,7 @@ public class CommonAdminServiceImpl implements CommonAdminService {
         }
         commonMapper.deleteAuthorMenuByMenu(menuNo); // 권한 매핑 정리(FK)
         commonMapper.deleteMenu(menuNo);
+        auditService.log("MENU_DELETE", "MENU", String.valueOf(menuNo), null);
     }
 
     // ===== 권한관리 =====
@@ -160,6 +188,7 @@ public class CommonAdminServiceImpl implements CommonAdminService {
         } else {
             commonMapper.updateAuthority(p);
         }
+        auditService.log(isNew ? "AUTH_CREATE" : "AUTH_UPDATE", "AUTHORITY", authorCode, authorNm);
     }
 
     @Override
@@ -173,6 +202,7 @@ public class CommonAdminServiceImpl implements CommonAdminService {
         }
         commonMapper.deleteAuthorMenus(authorCode); // 메뉴 매핑 정리(FK)
         commonMapper.deleteAuthority(authorCode);
+        auditService.log("AUTH_DELETE", "AUTHORITY", authorCode, null);
     }
 
     @Override
@@ -187,6 +217,8 @@ public class CommonAdminServiceImpl implements CommonAdminService {
                 if (m != null) commonMapper.insertAuthorMenu(authorCode, m);
             }
         }
+        auditService.log("AUTH_MENUS", "AUTHORITY", authorCode,
+                "menus=" + (menuNos == null ? 0 : menuNos.size()));
     }
 
     private String emptyToNull(String s) {

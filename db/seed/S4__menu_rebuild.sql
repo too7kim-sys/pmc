@@ -25,7 +25,8 @@ INSERT INTO comtnmenuinfo(menu_no, menu_nm, menu_url, upper_menu_no, menu_ordr, 
   (7400,'권한관리',      '/pmc/admin/authority.do',      7000,103,'Y'),
   (7500,'사용자',        '/pmc/admin/user.do',           7000,104,'Y'),
   (7200,'데이터품질',    '/pmc/admin/dq.do',             7000,105,'Y'),
-  (7600,'알림채널',      '/pmc/admin/alertChannel.do',   7000,106,'Y')
+  (7600,'알림채널',      '/pmc/admin/alertChannel.do',   7000,106,'Y'),
+  (7700,'감사로그',      '/pmc/admin/auditLog.do',       7000,107,'Y')
 ON CONFLICT (menu_no) DO UPDATE
   SET menu_nm=EXCLUDED.menu_nm, menu_url=EXCLUDED.menu_url,
       upper_menu_no=EXCLUDED.upper_menu_no, menu_ordr=EXCLUDED.menu_ordr, use_yn=EXCLUDED.use_yn;

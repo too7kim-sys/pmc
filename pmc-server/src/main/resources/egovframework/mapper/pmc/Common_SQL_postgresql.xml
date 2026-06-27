@@ -22,4 +22,13 @@
          WHERE emplyr_id = #{emplyrId}
     </update>
 
+    <!-- 로그인 실패 누적 + 임계치(>0) 도달 시 계정 잠금 -->
+    <update id="lockIfExceeded">
+        UPDATE comtnemplyrinfo
+           SET fail_cnt = fail_cnt + 1,
+               lock_at = CASE WHEN #{threshold} &gt; 0 AND fail_cnt + 1 &gt;= #{threshold}
+                              THEN 'Y' ELSE lock_at END
+         WHERE emplyr_id = #{emplyrId}
+    </update>
+
 </mapper>
