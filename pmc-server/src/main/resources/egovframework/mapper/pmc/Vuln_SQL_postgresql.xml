@@ -72,6 +72,34 @@
                   f.last_detected_at DESC
     </select>
 
+    <sql id="findingFilter">
+        <if test="serverId != null"> AND f.server_id = #{serverId} </if>
+        <if test="severity != null and severity != ''"> AND f.severity = #{severity} </if>
+        <if test="status != null and status != ''"> AND f.status = #{status} </if>
+        <if test="keyword != null and keyword != ''">
+            AND (f.check_code ILIKE '%' || #{keyword} || '%' OR f.title ILIKE '%' || #{keyword} || '%')
+        </if>
+    </sql>
+
+    <select id="selectFindingsPaged" resultType="egovframework.let.pmc.vuln.service.VulnFindingVO">
+        SELECT f.finding_id, f.server_id, f.check_code, f.source, f.category, f.title, f.severity,
+               f.status, f.first_detected_at, f.last_detected_at, f.occurrence_count, f.recur_count,
+               CAST(f.last_run_id AS varchar) AS last_run_id, f.reg_dt, f.upd_dt,
+               s.hostname AS hostname, s.service_name AS service_name
+          FROM pmc_vuln_finding f
+          JOIN pmc_server s ON s.server_id = f.server_id
+         <where><include refid="findingFilter"/></where>
+         ORDER BY CASE f.severity WHEN '상' THEN 0 WHEN '중' THEN 1 ELSE 2 END,
+                  f.last_detected_at DESC
+         LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countFindings" resultType="int">
+        SELECT count(*)
+          FROM pmc_vuln_finding f
+         <where><include refid="findingFilter"/></where>
+    </select>
+
     <select id="selectFindingById" resultType="egovframework.let.pmc.vuln.service.VulnFindingVO">
         SELECT f.finding_id, f.server_id, f.check_code, f.source, f.category, f.title, f.severity,
                f.status, f.first_detected_at, f.last_detected_at, f.occurrence_count, f.recur_count,

@@ -102,19 +102,45 @@ public class GlobalMenuAdvice {
         return uri == null ? "" : uri;
     }
 
-    /** 현재 경로와 일치하는 메뉴(및 그 상위 그룹)에 active 표시. 정확 일치 우선. */
+    /**
+     * 현재 경로와 가장 잘 맞는 메뉴 1개(및 그 상위 그룹)에 active 표시.
+     * 정확 일치 우선, 없으면 컨트롤러 디렉터리(예 /pmc/vuln/) 기준 최장 접두 일치 → 상세/하위 페이지도 강조.
+     */
     private void markActive(List<MenuNode> roots, String cur) {
         if (cur == null || cur.isEmpty()) return;
+        MenuNode best = null;
+        int bestLen = -1;
         for (MenuNode root : roots) {
-            boolean childActive = false;
-            for (MenuNode ch : root.getChildren()) {
-                boolean a = cur.equals(ch.getMenuUrl());
-                ch.setActive(a);
-                childActive = childActive || a;
+            MenuNode[] cands = candidates(root);
+            for (MenuNode n : cands) {
+                String url = n.getMenuUrl();
+                if (url == null) continue;
+                if (cur.equals(url)) { best = n; bestLen = Integer.MAX_VALUE; }   // 정확 일치 최우선
+                else {
+                    int slash = url.lastIndexOf('/');
+                    String dir = slash >= 0 ? url.substring(0, slash + 1) : url;
+                    // /pmc/ 처럼 얕은 디렉터리(2뎁스)는 과매칭 방지 위해 제외
+                    if (dir.length() > "/x/".length() && cur.startsWith(dir) && dir.length() > bestLen) {
+                        best = n; bestLen = dir.length();
+                    }
+                }
             }
-            boolean selfActive = root.getMenuUrl() != null && cur.equals(root.getMenuUrl());
-            root.setActive(selfActive || childActive);
         }
+        if (best == null) return;
+        for (MenuNode root : roots) {
+            if (root == best) { root.setActive(true); continue; }
+            for (MenuNode ch : root.getChildren()) {
+                if (ch == best) { ch.setActive(true); root.setActive(true); }
+            }
+        }
+    }
+
+    /** 루트 + 그 자식들을 한 배열로. */
+    private MenuNode[] candidates(MenuNode root) {
+        List<MenuNode> list = new ArrayList<>();
+        list.add(root);
+        list.addAll(root.getChildren());
+        return list.toArray(new MenuNode[0]);
     }
 
     private Long toLong(Object o) {

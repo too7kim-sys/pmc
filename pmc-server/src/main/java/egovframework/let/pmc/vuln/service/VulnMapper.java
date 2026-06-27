@@ -43,6 +43,19 @@ public interface VulnMapper {
                                        @Param("severity") String severity,
                                        @Param("status") String status);
 
+    /** 검색(키워드=점검코드/취약점명) + 페이징 목록. */
+    List<VulnFindingVO> selectFindingsPaged(@Param("serverId") Long serverId,
+                                            @Param("severity") String severity,
+                                            @Param("status") String status,
+                                            @Param("keyword") String keyword,
+                                            @Param("limit") int limit,
+                                            @Param("offset") int offset);
+
+    int countFindings(@Param("serverId") Long serverId,
+                      @Param("severity") String severity,
+                      @Param("status") String status,
+                      @Param("keyword") String keyword);
+
     VulnFindingVO selectFindingById(@Param("findingId") Long findingId);
 
     List<Map<String, Object>> selectRecurrenceSummary();

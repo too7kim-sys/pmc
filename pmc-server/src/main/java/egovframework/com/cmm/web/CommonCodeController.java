@@ -77,6 +77,7 @@ public class CommonCodeController {
     public String userList(@RequestParam(required = false) String emplyrId, Model model) {
         model.addAttribute("users", commonMapper.selectUsers());
         model.addAttribute("roles", commonMapper.selectRoles());
+        model.addAttribute("deptCodes", commonMapper.selectCodesByGroup("DEPT"));
         if (emplyrId != null) {
             model.addAttribute("editUser", commonMapper.selectUserOne(emplyrId));
             model.addAttribute("editUserRoles", commonMapper.selectUserRoles(emplyrId));

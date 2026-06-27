@@ -145,6 +145,17 @@ public class VulnServiceImpl implements VulnService {
     }
 
     @Override
+    public List<VulnFindingVO> getFindingsPaged(Long serverId, String severity, String status,
+                                                String keyword, int limit, int offset) {
+        return vulnMapper.selectFindingsPaged(serverId, severity, status, keyword, limit, offset);
+    }
+
+    @Override
+    public int countFindings(Long serverId, String severity, String status, String keyword) {
+        return vulnMapper.countFindings(serverId, severity, status, keyword);
+    }
+
+    @Override
     public VulnFindingVO getFinding(Long findingId) {
         return vulnMapper.selectFindingById(findingId);
     }

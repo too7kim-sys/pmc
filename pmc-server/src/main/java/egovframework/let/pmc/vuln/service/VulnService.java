@@ -23,6 +23,12 @@ public interface VulnService {
 
     List<VulnFindingVO> getFindings(Long serverId, String severity, String status);
 
+    /** 검색+페이징 목록. */
+    List<VulnFindingVO> getFindingsPaged(Long serverId, String severity, String status,
+                                         String keyword, int limit, int offset);
+
+    int countFindings(Long serverId, String severity, String status, String keyword);
+
     VulnFindingVO getFinding(Long findingId);
 
     List<VulnActionVO> getActions(Long findingId);

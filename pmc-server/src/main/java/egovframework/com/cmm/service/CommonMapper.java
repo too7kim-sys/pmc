@@ -15,6 +15,8 @@ public interface CommonMapper {
     // ===== 공통코드 =====
     List<Map<String, Object>> selectCommonCodes();
     List<Map<String, Object>> selectCodeGroups();
+    /** 특정 그룹의 사용중 코드 목록(드롭다운용). */
+    List<Map<String, Object>> selectCodesByGroup(@Param("clCode") String clCode);
     Map<String, Object> selectCode(@Param("clCode") String clCode, @Param("code") String code);
     int countGroup(@Param("clCode") String clCode);
     int insertGroup(@Param("clCode") String clCode, @Param("clCodeNm") String clCodeNm);

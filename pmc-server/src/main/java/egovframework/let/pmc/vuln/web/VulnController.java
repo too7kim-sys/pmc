@@ -29,16 +29,31 @@ public class VulnController {
         this.reportService = reportService;
     }
 
+    private static final int PAGE_SIZE = 20;
+
     @GetMapping("/list.do")
     public String list(@RequestParam(required = false) Long serverId,
                        @RequestParam(required = false) String severity,
                        @RequestParam(required = false) String status,
+                       @RequestParam(required = false) String keyword,
+                       @RequestParam(defaultValue = "1") int page,
                        Model model) {
-        model.addAttribute("findings", vulnService.getFindings(serverId, severity, status));
+        String kw = (keyword != null && !keyword.trim().isEmpty()) ? keyword.trim() : null;
+        int totalCount = vulnService.countFindings(serverId, severity, status, kw);
+        int totalPages = Math.max(1, (int) Math.ceil(totalCount / (double) PAGE_SIZE));
+        if (page < 1) page = 1;
+        if (page > totalPages) page = totalPages;
+        int offset = (page - 1) * PAGE_SIZE;
+        model.addAttribute("findings",
+                vulnService.getFindingsPaged(serverId, severity, status, kw, PAGE_SIZE, offset));
         model.addAttribute("servers", agentService.getServerList());
         model.addAttribute("fServerId", serverId);
         model.addAttribute("fSeverity", severity);
         model.addAttribute("fStatus", status);
+        model.addAttribute("fKeyword", kw);
+        model.addAttribute("page", page);
+        model.addAttribute("totalPages", totalPages);
+        model.addAttribute("totalCount", totalCount);
         return "egovframework/let/pmc/vuln/vulnList";
     }
 

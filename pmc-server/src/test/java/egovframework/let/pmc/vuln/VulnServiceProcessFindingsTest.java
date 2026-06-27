@@ -187,6 +187,13 @@ class VulnServiceProcessFindingsTest {
         public List<VulnFindingVO> selectFindings(Long serverId, String severity, String status) {
             return new ArrayList<>(findings.values());
         }
+        public List<VulnFindingVO> selectFindingsPaged(Long serverId, String severity, String status,
+                                                       String keyword, int limit, int offset) {
+            return new ArrayList<>(findings.values());
+        }
+        public int countFindings(Long serverId, String severity, String status, String keyword) {
+            return findings.size();
+        }
         public VulnFindingVO selectFindingById(Long findingId) { return byId.get(findingId); }
         public List<Map<String, Object>> selectRecurrenceSummary() { return Collections.emptyList(); }
         public VulnExceptionVO selectActiveException(Long findingId) {

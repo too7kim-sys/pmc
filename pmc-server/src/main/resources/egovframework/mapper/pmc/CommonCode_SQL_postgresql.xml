@@ -18,6 +18,13 @@
           FROM comtccmmnclcode ORDER BY cl_code
     </select>
 
+    <select id="selectCodesByGroup" resultType="hashmap">
+        SELECT code AS "code", code_nm AS "codeNm"
+          FROM comtccmmncodedetail
+         WHERE cl_code = #{clCode} AND use_yn = 'Y'
+         ORDER BY sort_ordr, code
+    </select>
+
     <select id="selectCode" resultType="hashmap">
         SELECT d.cl_code AS "clCode", g.cl_code_nm AS "clCodeNm", d.code AS "code",
                d.code_nm AS "codeNm", d.sort_ordr AS "sortOrdr", d.use_yn AS "useYn"

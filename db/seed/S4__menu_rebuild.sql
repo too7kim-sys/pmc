@@ -41,3 +41,13 @@ INSERT INTO comtnauthormenu(author_code, menu_no)
 SELECT 'ROLE_USER', menu_no FROM comtnmenuinfo
  WHERE menu_no IN (1000,2000,2100,4000,5000,5500,5600,8000,6000)
 ON CONFLICT DO NOTHING;
+
+-- 부서코드 공통코드(사용자 등록 드롭다운용 기본값 — 운영 시 조직도로 대체)
+INSERT INTO comtccmmnclcode(cl_code, cl_code_nm) VALUES ('DEPT','부서')
+ON CONFLICT (cl_code) DO NOTHING;
+INSERT INTO comtccmmncodedetail(cl_code, code, code_nm, sort_ordr) VALUES
+  ('DEPT','SYS','정보시스템부',1),
+  ('DEPT','SEC','정보보안부',2),
+  ('DEPT','OPS','운영부',3),
+  ('DEPT','NET','네트워크부',4)
+ON CONFLICT (cl_code, code) DO NOTHING;

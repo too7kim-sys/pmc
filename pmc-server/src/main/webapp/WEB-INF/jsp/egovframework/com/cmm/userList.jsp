@@ -20,7 +20,13 @@
         </p>
         <p>이메일: <input name="emailAdres" value="<c:out value='${editUser.emailAdres}'/>"/>
            직위: <input name="ofcpsNm" value="<c:out value='${editUser.ofcpsNm}'/>" style="width:90px"/>
-           부서: <input name="deptCode" value="<c:out value='${editUser.deptCode}'/>" style="width:90px"/>
+           부서:
+           <select name="deptCode">
+               <option value="">(선택)</option>
+               <c:forEach var="d" items="${deptCodes}">
+                   <option value="${d.code}" ${editUser.deptCode == d.code ? 'selected' : ''}><c:out value="${d.codeNm}"/></option>
+               </c:forEach>
+           </select>
         </p>
         <p>상태:
             <select name="emplyrSttus">

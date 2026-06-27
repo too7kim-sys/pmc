@@ -27,6 +27,8 @@
             <option value="FIXED"    ${fStatus=='FIXED'?'selected':''}>FIXED</option>
             <option value="EXEMPTED" ${fStatus=='EXEMPTED'?'selected':''}>EXEMPTED(예외)</option>
         </select>
+        검색: <input name="keyword" value="<c:out value='${fKeyword}'/>" placeholder="점검코드/취약점명" style="width:160px"/>
+        <button class="btn">검색</button>
     </form>
     <span class="inline">
         <a class="btn" href="<c:url value='/pmc/vuln/recurrence.do'/>">재발 현황</a>
@@ -59,6 +61,29 @@
         </c:forEach>
         <c:if test="${empty findings}"><tr><td colspan="8" class="muted">취약점이 없습니다.</td></tr></c:if>
     </table>
+    <p class="inline" style="margin-top:8px">
+        <span class="muted">총 ${totalCount}건 · ${page}/${totalPages} 페이지</span>
+        <c:if test="${page > 1}">
+            <c:url var="prevUrl" value="/pmc/vuln/list.do">
+                <c:if test="${not empty fServerId}"><c:param name="serverId" value="${fServerId}"/></c:if>
+                <c:if test="${not empty fSeverity}"><c:param name="severity" value="${fSeverity}"/></c:if>
+                <c:if test="${not empty fStatus}"><c:param name="status" value="${fStatus}"/></c:if>
+                <c:if test="${not empty fKeyword}"><c:param name="keyword" value="${fKeyword}"/></c:if>
+                <c:param name="page" value="${page-1}"/>
+            </c:url>
+            <a class="btn" href="${prevUrl}">이전</a>
+        </c:if>
+        <c:if test="${page < totalPages}">
+            <c:url var="nextUrl" value="/pmc/vuln/list.do">
+                <c:if test="${not empty fServerId}"><c:param name="serverId" value="${fServerId}"/></c:if>
+                <c:if test="${not empty fSeverity}"><c:param name="severity" value="${fSeverity}"/></c:if>
+                <c:if test="${not empty fStatus}"><c:param name="status" value="${fStatus}"/></c:if>
+                <c:if test="${not empty fKeyword}"><c:param name="keyword" value="${fKeyword}"/></c:if>
+                <c:param name="page" value="${page+1}"/>
+            </c:url>
+            <a class="btn" href="${nextUrl}">다음</a>
+        </c:if>
+    </p>
 </div>
 
 <%@ include file="/WEB-INF/jsp/inc/footer.jspf" %>
