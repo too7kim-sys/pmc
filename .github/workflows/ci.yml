@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest   # Docker 가용 → PgSchemaIntegrationTest(Testcontainers PG) 실제 실행
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '11'
+          cache: maven
+
+      - name: Build & test (agent + server)
+        run: mvn -B -ntp -pl pmc-agent,pmc-server -am test
+
+      - name: Package agent dist (jar + tar.gz/zip)
+        run: mvn -B -ntp -pl pmc-agent -am -DskipTests package
+
+      - name: Upload agent dist artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pmc-agent-dist
+          path: |
+            pmc-agent/target/pmc-agent-1.0.0-dist.tar.gz
+            pmc-agent/target/pmc-agent-1.0.0-dist.zip
+          if-no-files-found: warn

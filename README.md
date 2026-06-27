@@ -49,7 +49,13 @@ mvn -f pmc-server/pom.xml org.eclipse.jetty:jetty-maven-plugin:9.4.53.v20231009:
 # 3) Agent 빌드/실행 (Java 8 타깃)
 mvn -f pmc-agent/pom.xml package                        # → pmc-agent/target/pmc-agent-1.0.0.jar
 java -jar pmc-agent/target/pmc-agent-1.0.0.jar --config conf/agent.yml --once
+# 배포 패키지(jar + conf/bin/systemd/init.d)도 함께 생성:
+#   pmc-agent/target/pmc-agent-1.0.0-dist.tar.gz, -dist.zip  (설치 대상에 풀어 사용)
 ```
+
+> **CI**: `.github/workflows/ci.yml` 가 push/PR 시 Java 11 로 `mvn -pl pmc-agent,pmc-server -am test`
+> 실행(러너에 Docker 가용 → `PgSchemaIntegrationTest` 가 Testcontainers PostgreSQL 로 실제 검증)하고
+> Agent 배포 패키지를 아티팩트로 업로드한다.
 
 웹 UI에서 대상 서버 등록 → 등록토큰 발급 → `agent.yml`의 `enrollToken`에 입력 후 Agent 실행하면
 자동 등록·수집·전송된다. 설치 스크립트(systemd / Windows procrun / SysV init.d)는

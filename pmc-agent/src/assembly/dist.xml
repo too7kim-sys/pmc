@@ -1,0 +1,38 @@
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.1.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.1.0 http://maven.apache.org/xsd/assembly-2.1.0.xsd">
+    <!-- PMC Agent 배포 패키지: 실행 jar + 설정/스크립트/서비스 유닛 -->
+    <id>dist</id>
+    <formats>
+        <format>tar.gz</format>
+        <format>zip</format>
+    </formats>
+    <includeBaseDirectory>true</includeBaseDirectory>
+
+    <fileSets>
+        <!-- 설정/서비스/문서(실행권한 불필요) -->
+        <fileSet>
+            <directory>src/dist</directory>
+            <outputDirectory>.</outputDirectory>
+            <excludes>
+                <exclude>bin/**</exclude>
+            </excludes>
+            <fileMode>0644</fileMode>
+        </fileSet>
+        <!-- 실행 스크립트(실행권한) -->
+        <fileSet>
+            <directory>src/dist/bin</directory>
+            <outputDirectory>bin</outputDirectory>
+            <fileMode>0755</fileMode>
+        </fileSet>
+    </fileSets>
+
+    <files>
+        <!-- shade 로 생성된 runnable jar -->
+        <file>
+            <source>${project.build.directory}/${project.build.finalName}.jar</source>
+            <outputDirectory>.</outputDirectory>
+            <destName>pmc-agent.jar</destName>
+        </file>
+    </files>
+</assembly>
