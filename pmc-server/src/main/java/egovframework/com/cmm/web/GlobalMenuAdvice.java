@@ -1,6 +1,7 @@
 package egovframework.com.cmm.web;
 
 import egovframework.com.cmm.service.CommonMapper;
+import egovframework.com.cmm.service.MenuNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -35,7 +37,7 @@ public class GlobalMenuAdvice {
     }
 
     @ModelAttribute("gnbMenus")
-    public List<Map<String, Object>> gnbMenus() {
+    public List<MenuNode> gnbMenus() {
         try {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             if (auth == null || !auth.isAuthenticated()) {
@@ -51,11 +53,49 @@ public class GlobalMenuAdvice {
             if (roles.isEmpty()) {
                 return Collections.emptyList();
             }
-            return commonMapper.selectNavMenus(roles);
+            return buildTree(commonMapper.selectNavMenus(roles));
         } catch (Exception e) {
             // 네비게이션 조회 실패가 화면 렌더를 막지 않도록 빈 목록 폴백
             log.warn("GNB 메뉴 조회 실패: {}", e.getMessage());
             return Collections.emptyList();
         }
+    }
+
+    /** 평면 메뉴 행(menu_ordr 정렬)을 2단계 트리로 구성. 상위가 접근목록에 없으면 해당 노드를 최상위로 승격. */
+    private List<MenuNode> buildTree(List<Map<String, Object>> rows) {
+        Map<Long, MenuNode> byNo = new LinkedHashMap<>();
+        for (Map<String, Object> r : rows) {
+            Long no = toLong(r.get("menuNo"));
+            byNo.put(no, new MenuNode(no, str(r.get("menuNm")), str(r.get("menuUrl"))));
+        }
+        List<MenuNode> roots = new ArrayList<>();
+        for (Map<String, Object> r : rows) {
+            MenuNode node = byNo.get(toLong(r.get("menuNo")));
+            Long upper = toLong(r.get("upperMenuNo"));
+            if (upper != null && byNo.containsKey(upper)) {
+                byNo.get(upper).getChildren().add(node);
+            } else {
+                roots.add(node);
+            }
+        }
+        // URL 도 없고 하위도 없는 빈 그룹 노드는 제외
+        List<MenuNode> result = new ArrayList<>();
+        for (MenuNode n : roots) {
+            if (n.getMenuUrl() != null || !n.getChildren().isEmpty()) {
+                result.add(n);
+            }
+        }
+        return result;
+    }
+
+    private Long toLong(Object o) {
+        if (o == null) return null;
+        if (o instanceof Long) return (Long) o;
+        if (o instanceof Number) return ((Number) o).longValue();
+        try { return Long.parseLong(o.toString()); } catch (NumberFormatException e) { return null; }
+    }
+
+    private String str(Object o) {
+        return o == null ? null : String.valueOf(o);
     }
 }

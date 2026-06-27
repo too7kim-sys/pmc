@@ -19,10 +19,27 @@
     </div>
 </header>
 <nav class="gnb">
-    <%-- 데이터 구동형 GNB: 로그인 롤이 접근 허용된 메뉴(comtnauthormenu)만 노출.
+    <%-- 데이터 구동형 GNB(2단계): 로그인 롤이 접근 허용된 메뉴(comtnauthormenu)만 노출.
          메뉴/권한관리 화면에서 제어. (URL 접근통제는 context-security.xml 이 1차 적용) --%>
     <c:forEach var="m" items="${gnbMenus}">
-        <a href="<c:url value='${m.menuUrl}'/>"><c:out value="${m.menuNm}"/></a>
+        <c:choose>
+            <c:when test="${empty m.children}">
+                <a href="<c:url value='${m.menuUrl}'/>"><c:out value="${m.menuNm}"/></a>
+            </c:when>
+            <c:otherwise>
+                <span class="gnb-group">
+                    <c:choose>
+                        <c:when test="${not empty m.menuUrl}"><a href="<c:url value='${m.menuUrl}'/>"><c:out value="${m.menuNm}"/> ▾</a></c:when>
+                        <c:otherwise><a href="#" onclick="return false;"><c:out value="${m.menuNm}"/> ▾</a></c:otherwise>
+                    </c:choose>
+                    <span class="gnb-sub">
+                        <c:forEach var="ch" items="${m.children}">
+                            <a href="<c:url value='${ch.menuUrl}'/>"><c:out value="${ch.menuNm}"/></a>
+                        </c:forEach>
+                    </span>
+                </span>
+            </c:otherwise>
+        </c:choose>
     </c:forEach>
     <c:if test="${empty gnbMenus}">
         <a href="<c:url value='/pmc/dashboard.do'/>">대시보드</a>
