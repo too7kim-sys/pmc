@@ -12,6 +12,21 @@ nav.gnb .gnb-sub { display: none; position: absolute; left: 0; top: 100%; backgr
 nav.gnb .gnb-group:hover .gnb-sub { display: block; }
 nav.gnb .gnb-sub a { display: block; padding: 10px 16px; white-space: nowrap; font-size: 13px; }
 nav.gnb .gnb-sub a:hover { background: #142e57; }
+/* 모바일 햄버거 토글(데스크톱 숨김) */
+.gnb-toggle { display: none; background: none; border: 1px solid #cfe0ff; color: #fff; font-size: 18px; line-height: 1; padding: 4px 10px; border-radius: 4px; cursor: pointer; }
+@media (max-width: 768px) {
+    header.top { flex-wrap: wrap; }
+    .gnb-toggle { display: inline-block; order: 2; }
+    header.top .user { order: 3; width: 100%; margin-top: 6px; }
+    nav.gnb { display: none; padding: 0; }
+    nav.gnb.open { display: block; }
+    nav.gnb a { display: block; border-bottom: 1px solid #1b3a6b; }
+    nav.gnb .gnb-group { display: block; }
+    nav.gnb .gnb-sub { display: none; position: static; box-shadow: none; min-width: 0; background: #214780; }
+    nav.gnb .gnb-group:hover .gnb-sub { display: none; }   /* 모바일은 hover 대신 클릭(.open) */
+    nav.gnb .gnb-group.open .gnb-sub { display: block; }
+    nav.gnb .gnb-sub a { padding-left: 32px; }
+}
 main { padding: 20px; }
 h2.page { font-size: 20px; margin: 0 0 16px; border-left: 4px solid #27508f; padding-left: 10px; }
 .card { background: #fff; border: 1px solid #e0e4ea; border-radius: 6px; padding: 16px; margin-bottom: 16px; }

@@ -13,28 +13,30 @@
 <body>
 <header class="top">
     <h1>🛡 장애예방점검 자동화 시스템 (PMC)</h1>
+    <button type="button" class="gnb-toggle" aria-label="메뉴" onclick="document.getElementById('gnb').classList.toggle('open');">☰</button>
     <div class="user">
         <sec:authentication property="name"/> 님
         <a href="<c:url value='/logout'/>">로그아웃</a>
     </div>
 </header>
-<nav class="gnb">
+<nav class="gnb" id="gnb">
     <%-- 데이터 구동형 GNB(2단계): 로그인 롤이 접근 허용된 메뉴(comtnauthormenu)만 노출.
-         메뉴/권한관리 화면에서 제어. (URL 접근통제는 context-security.xml 이 1차 적용) --%>
+         메뉴/권한관리 화면에서 제어. (URL 접근통제는 context-security.xml 이 1차 적용)
+         active=현재 페이지(.on), 모바일은 그룹 클릭으로 펼침(.open) --%>
     <c:forEach var="m" items="${gnbMenus}">
         <c:choose>
             <c:when test="${empty m.children}">
-                <a href="<c:url value='${m.menuUrl}'/>"><c:out value="${m.menuNm}"/></a>
+                <a class="${m.active ? 'on' : ''}" href="<c:url value='${m.menuUrl}'/>"><c:out value="${m.menuNm}"/></a>
             </c:when>
             <c:otherwise>
-                <span class="gnb-group">
+                <span class="gnb-group" onclick="if(window.matchMedia('(max-width:768px)').matches){this.classList.toggle('open');}">
                     <c:choose>
-                        <c:when test="${not empty m.menuUrl}"><a href="<c:url value='${m.menuUrl}'/>"><c:out value="${m.menuNm}"/> ▾</a></c:when>
-                        <c:otherwise><a href="#" onclick="return false;"><c:out value="${m.menuNm}"/> ▾</a></c:otherwise>
+                        <c:when test="${not empty m.menuUrl}"><a class="${m.active ? 'on' : ''}" href="<c:url value='${m.menuUrl}'/>"><c:out value="${m.menuNm}"/> ▾</a></c:when>
+                        <c:otherwise><a class="${m.active ? 'on' : ''}" href="#" onclick="return false;"><c:out value="${m.menuNm}"/> ▾</a></c:otherwise>
                     </c:choose>
                     <span class="gnb-sub">
                         <c:forEach var="ch" items="${m.children}">
-                            <a href="<c:url value='${ch.menuUrl}'/>"><c:out value="${ch.menuNm}"/></a>
+                            <a class="${ch.active ? 'on' : ''}" href="<c:url value='${ch.menuUrl}'/>"><c:out value="${ch.menuNm}"/></a>
                         </c:forEach>
                     </span>
                 </span>

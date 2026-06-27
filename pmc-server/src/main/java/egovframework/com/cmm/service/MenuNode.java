@@ -11,6 +11,7 @@ public class MenuNode implements Serializable {
     private Long menuNo;
     private String menuNm;
     private String menuUrl;
+    private boolean active;   // 현재 페이지 해당 메뉴(또는 하위 포함) 여부
     private final List<MenuNode> children = new ArrayList<>();
 
     public MenuNode() { }
@@ -27,5 +28,7 @@ public class MenuNode implements Serializable {
     public void setMenuNm(String menuNm) { this.menuNm = menuNm; }
     public String getMenuUrl() { return menuUrl; }
     public void setMenuUrl(String menuUrl) { this.menuUrl = menuUrl; }
+    public boolean isActive() { return active; }
+    public void setActive(boolean active) { this.active = active; }
     public List<MenuNode> getChildren() { return children; }
 }

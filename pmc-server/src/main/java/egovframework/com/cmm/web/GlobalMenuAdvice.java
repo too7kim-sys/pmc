@@ -11,6 +11,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -37,7 +38,7 @@ public class GlobalMenuAdvice {
     }
 
     @ModelAttribute("gnbMenus")
-    public List<MenuNode> gnbMenus() {
+    public List<MenuNode> gnbMenus(HttpServletRequest request) {
         try {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             if (auth == null || !auth.isAuthenticated()) {
@@ -53,7 +54,9 @@ public class GlobalMenuAdvice {
             if (roles.isEmpty()) {
                 return Collections.emptyList();
             }
-            return buildTree(commonMapper.selectNavMenus(roles));
+            List<MenuNode> tree = buildTree(commonMapper.selectNavMenus(roles));
+            markActive(tree, currentPath(request));
+            return tree;
         } catch (Exception e) {
             // 네비게이션 조회 실패가 화면 렌더를 막지 않도록 빈 목록 폴백
             log.warn("GNB 메뉴 조회 실패: {}", e.getMessage());
@@ -86,6 +89,32 @@ public class GlobalMenuAdvice {
             }
         }
         return result;
+    }
+
+    /** 컨텍스트패스를 제외한 현재 요청 경로. */
+    private String currentPath(HttpServletRequest req) {
+        if (req == null) return "";
+        String uri = req.getRequestURI();
+        String ctx = req.getContextPath();
+        if (ctx != null && !ctx.isEmpty() && uri != null && uri.startsWith(ctx)) {
+            return uri.substring(ctx.length());
+        }
+        return uri == null ? "" : uri;
+    }
+
+    /** 현재 경로와 일치하는 메뉴(및 그 상위 그룹)에 active 표시. 정확 일치 우선. */
+    private void markActive(List<MenuNode> roots, String cur) {
+        if (cur == null || cur.isEmpty()) return;
+        for (MenuNode root : roots) {
+            boolean childActive = false;
+            for (MenuNode ch : root.getChildren()) {
+                boolean a = cur.equals(ch.getMenuUrl());
+                ch.setActive(a);
+                childActive = childActive || a;
+            }
+            boolean selfActive = root.getMenuUrl() != null && cur.equals(root.getMenuUrl());
+            root.setActive(selfActive || childActive);
+        }
     }
 
     private Long toLong(Object o) {
