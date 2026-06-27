@@ -93,6 +93,8 @@ class PgSchemaIntegrationTest {
             assertNotNull(m.selectPlanCompliance());
             assertNotNull(m.selectDqSummary());
             m.selectDailyTrend();
+            assertNotNull(m.selectVulnSummary());
+            m.selectVulnTopServers();
         }
     }
 

@@ -51,5 +51,19 @@ public class ReportScheduler {
         } catch (Exception e) {
             log.warn("정기 위험분석 보고서 생성 실패: {}", e.getMessage());
         }
+        // 정기 취약점 진단 보고서도 함께 생성(독립 try — 한쪽 실패가 다른 쪽에 영향 없음)
+        try {
+            ReportVO vo = reportService.generateVulnReport(type);
+            log.info("정기 취약점 진단 보고서 생성: {}", vo.getFileName());
+            try {
+                alertService.raise("AUTO_REPORT", null, null, "INFO",
+                        "[정기보고서] 취약점 진단 보고서 생성",
+                        "취약점 진단 현황 보고서(" + type + ")가 생성되었습니다: " + vo.getFileName());
+            } catch (Exception ignore) {
+                // 통지 실패는 보고서 생성에 영향 없음
+            }
+        } catch (Exception e) {
+            log.warn("정기 취약점 진단 보고서 생성 실패: {}", e.getMessage());
+        }
     }
 }

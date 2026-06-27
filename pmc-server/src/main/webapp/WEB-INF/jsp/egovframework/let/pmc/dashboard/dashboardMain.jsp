@@ -82,6 +82,29 @@
 </div>
 
 <div class="card">
+    <h3>취약점 진단 현황</h3>
+    <div class="grid">
+        <div class="kpi"><div class="num">${vulnSummary.openCnt}</div>미조치</div>
+        <div class="kpi"><div class="num" style="color:#c0392b">${vulnSummary.high}</div>상(높음)</div>
+        <div class="kpi"><div class="num" style="color:#f39c12">${vulnSummary.mid}</div>중</div>
+        <div class="kpi"><div class="num">${vulnSummary.low}</div>하</div>
+        <div class="kpi"><div class="num" style="color:#c0392b">${vulnSummary.recurredCnt}</div>재발</div>
+        <div class="kpi"><div class="num">${vulnSummary.exempted}</div>예외</div>
+    </div>
+    <table class="tbl" style="margin-top:12px">
+        <tr><th>호스트</th><th>미조치</th><th>상</th><th>재발</th></tr>
+        <c:forEach var="v" items="${vulnTop}">
+            <tr><td><c:out value="${v.hostname}"/></td><td>${v.openCnt}</td>
+                <td><c:choose><c:when test="${v.high > 0}"><span class="st CRITICAL">${v.high}</span></c:when><c:otherwise>0</c:otherwise></c:choose></td>
+                <td><c:choose><c:when test="${v.recurred > 0}"><span class="st CRITICAL">${v.recurred}</span></c:when><c:otherwise>0</c:otherwise></c:choose></td></tr>
+        </c:forEach>
+        <c:if test="${empty vulnTop}"><tr><td colspan="4" class="muted">미조치 취약점 없음</td></tr></c:if>
+    </table>
+    <p class="muted" style="margin-top:8px"><a class="btn" href="<c:url value='/pmc/vuln/list.do'/>">취약점진단</a>
+        <a class="btn" href="<c:url value='/pmc/vuln/recurrence.do'/>">재발 현황</a></p>
+</div>
+
+<div class="card">
     <h3>웹서비스(SVC) 가용성 현황 (24h)</h3>
     <table class="tbl">
         <tr><th>서비스</th><th>호스트</th><th>HTTP</th><th>판정</th><th>시각</th></tr>

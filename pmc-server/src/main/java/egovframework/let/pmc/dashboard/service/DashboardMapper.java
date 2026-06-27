@@ -15,4 +15,6 @@ public interface DashboardMapper {
     Map<String, Object> selectPlanCompliance();           // 정기점검 이행률
     Map<String, Object> selectDqSummary();                // 데이터품질
     List<Map<String, Object>> selectDailyTrend();         // 최근 14일 일자별 판정 추이
+    Map<String, Object> selectVulnSummary();              // 취약점 요약(미조치/등급/재발/예외)
+    List<Map<String, Object>> selectVulnTopServers();     // 미조치 취약점 다발 서버 Top5
 }

@@ -81,4 +81,30 @@
          ORDER BY 1
     </select>
 
+    <!-- 취약점 진단 요약(미조치/등급/재발/예외) -->
+    <select id="selectVulnSummary" resultType="hashmap">
+        SELECT
+          COALESCE(sum(CASE WHEN status IN ('OPEN','RECURRED') THEN 1 ELSE 0 END),0) AS "openCnt",
+          COALESCE(sum(CASE WHEN status='RECURRED' THEN 1 ELSE 0 END),0) AS "recurredCnt",
+          COALESCE(sum(CASE WHEN status IN ('OPEN','RECURRED') AND severity='상' THEN 1 ELSE 0 END),0) AS "high",
+          COALESCE(sum(CASE WHEN status IN ('OPEN','RECURRED') AND severity='중' THEN 1 ELSE 0 END),0) AS "mid",
+          COALESCE(sum(CASE WHEN status IN ('OPEN','RECURRED') AND severity='하' THEN 1 ELSE 0 END),0) AS "low",
+          COALESCE(sum(CASE WHEN status='EXEMPTED' THEN 1 ELSE 0 END),0) AS "exempted"
+        FROM pmc_vuln_finding
+    </select>
+
+    <!-- 미조치 취약점 다발 서버 Top5 -->
+    <select id="selectVulnTopServers" resultType="hashmap">
+        SELECT s.hostname AS "hostname",
+               sum(CASE WHEN f.status IN ('OPEN','RECURRED') THEN 1 ELSE 0 END) AS "openCnt",
+               sum(CASE WHEN f.status IN ('OPEN','RECURRED') AND f.severity='상' THEN 1 ELSE 0 END) AS "high",
+               sum(CASE WHEN f.status='RECURRED' THEN 1 ELSE 0 END) AS "recurred"
+          FROM pmc_vuln_finding f
+          JOIN pmc_server s ON s.server_id = f.server_id
+         GROUP BY s.hostname
+        HAVING sum(CASE WHEN f.status IN ('OPEN','RECURRED') THEN 1 ELSE 0 END) > 0
+         ORDER BY "high" DESC, "openCnt" DESC
+         LIMIT 5
+    </select>
+
 </mapper>
